@@ -34,6 +34,24 @@ app.use('/api/subscriptions', subscriptionRoutes)
 app.use('/api/likes', likeRoutes)
 app.use('/api/favorites', favoriteRoutes)
 
+// Root route
+app.get('/', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    message: 'Dynamic Album Player API',
+    version: '1.0.0',
+    endpoints: {
+      health: '/api/health',
+      albums: '/api/albums',
+      songs: '/api/songs',
+      users: '/api/users',
+      subscriptions: '/api/subscriptions',
+      likes: '/api/likes',
+      favorites: '/api/favorites'
+    }
+  })
+})
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Dynamic Album Player API' })
