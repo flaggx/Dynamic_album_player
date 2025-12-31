@@ -4,7 +4,7 @@ import { useAuth0 } from '@auth0/auth0-react'
 import { albumStorage, subscriptionStorage, likeStorage, favoriteStorage } from '../services/storage'
 import { Album } from '../types'
 import Sidebar from '../components/Sidebar'
-import ProfileDropdown from '../components/ProfileDropdown'
+import TopBar from '../components/TopBar'
 import './Profile.css'
 
 const Profile = () => {
@@ -59,15 +59,7 @@ const Profile = () => {
     <div className="spotify-app">
       <Sidebar />
       <div className="main-content">
-        <div className="top-bar">
-          <div className="top-bar-left">
-            <button className="nav-button prev">‹</button>
-            <button className="nav-button next">›</button>
-          </div>
-          <div className="top-bar-right">
-            {currentUser && <ProfileDropdown user={currentUser} />}
-          </div>
-        </div>
+        <TopBar />
 
         <div className="content-area">
           <div className="profile-container">

@@ -5,7 +5,7 @@ import { albumStorage, songStorage, subscriptionStorage, likeStorage, favoriteSt
 import { Album, Song } from '../types'
 import { usePlayer } from '../contexts/PlayerContext'
 import Sidebar from '../components/Sidebar'
-import ProfileDropdown from '../components/ProfileDropdown'
+import TopBar from '../components/TopBar'
 import './AlbumDetail.css'
 
 const AlbumDetail = () => {
@@ -88,15 +88,7 @@ const AlbumDetail = () => {
     <div className="spotify-app">
       <Sidebar />
       <div className="main-content">
-        <div className="top-bar">
-          <div className="top-bar-left">
-            <button className="nav-button prev" onClick={() => navigate('/discover')}>‹</button>
-            <button className="nav-button next">›</button>
-          </div>
-          <div className="top-bar-right">
-            {user && <ProfileDropdown user={user} />}
-          </div>
-        </div>
+        <TopBar />
 
         <div className="content-area">
           <div className="album-detail-container">
