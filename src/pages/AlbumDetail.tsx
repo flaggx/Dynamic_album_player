@@ -4,6 +4,7 @@ import { useAuth0 } from '@auth0/auth0-react'
 import { albumStorage, songStorage, subscriptionStorage, likeStorage, favoriteStorage } from '../services/storage'
 import { Album, Song } from '../types'
 import AudioPlayer from '../components/AudioPlayer'
+import ProfileDropdown from '../components/ProfileDropdown'
 import './AlbumDetail.css'
 
 const AlbumDetail = () => {
@@ -83,6 +84,9 @@ const AlbumDetail = () => {
 
   return (
     <div className="album-detail">
+      <div className="album-detail-header-bar">
+        {user && <ProfileDropdown user={user} />}
+      </div>
       <div className="album-detail-container">
         <div className="album-header">
           <div className="album-cover-large">

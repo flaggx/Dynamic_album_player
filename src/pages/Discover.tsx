@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
 import { albumStorage, subscriptionStorage, likeStorage, favoriteStorage } from '../services/storage'
 import { Album } from '../types'
+import ProfileDropdown from '../components/ProfileDropdown'
 import './Discover.css'
 
 const Discover = () => {
@@ -50,7 +51,9 @@ const Discover = () => {
       <div className="discover-container">
         <div className="discover-header">
           <h1>Discover Albums</h1>
-          <div className="filter-buttons">
+          <div className="discover-header-right">
+            {user && <ProfileDropdown user={user} />}
+            <div className="filter-buttons">
             <button
               className={filter === 'all' ? 'active' : ''}
               onClick={() => setFilter('all')}
@@ -63,6 +66,7 @@ const Discover = () => {
             >
               Subscriptions
             </button>
+          </div>
           </div>
         </div>
 

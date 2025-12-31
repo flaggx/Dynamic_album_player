@@ -8,6 +8,10 @@ import Callback from './pages/Callback'
 import Discover from './pages/Discover'
 import CreateAlbum from './pages/CreateAlbum'
 import AlbumDetail from './pages/AlbumDetail'
+import Profile from './pages/Profile'
+import Settings from './pages/Settings'
+import MyAlbums from './pages/MyAlbums'
+import MyFavorites from './pages/MyFavorites'
 
 const domain = import.meta.env.VITE_AUTH0_DOMAIN
 const clientId = import.meta.env.VITE_AUTH0_CLIENT_ID
@@ -107,6 +111,46 @@ function App() {
           element={
             <ProtectedRoute>
               <AlbumDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile/:userId"
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <Settings />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/my-albums"
+          element={
+            <ProtectedRoute>
+              <MyAlbums />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/my-favorites"
+          element={
+            <ProtectedRoute>
+              <MyFavorites />
             </ProtectedRoute>
           }
         />

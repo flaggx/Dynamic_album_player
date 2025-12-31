@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
+import ProfileDropdown from '../components/ProfileDropdown'
 import './Home.css'
 
 const Home = () => {
-  const { user, logout } = useAuth0()
+  const { user } = useAuth0()
 
   return (
     <div className="app">
@@ -13,22 +14,11 @@ const Home = () => {
             <h1>Dynamic Album Player</h1>
             <p>Create, discover, and play albums with customizable tracks</p>
           </div>
-          <div className="user-menu">
-            {user?.picture && (
-              <img 
-                src={user.picture} 
-                alt={user.name || user.email} 
-                className="user-avatar"
-              />
-            )}
-            <span className="user-name">{user?.name || user?.email}</span>
-            <button 
-              onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })} 
-              className="logout-button"
-            >
-              Logout
-            </button>
-          </div>
+          {user && (
+            <div className="user-menu">
+              <ProfileDropdown user={user} />
+            </div>
+          )}
         </div>
       </header>
       <main className="app-main">

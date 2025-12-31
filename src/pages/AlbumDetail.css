@@ -4,6 +4,13 @@
   padding: 2rem;
 }
 
+.album-detail-header-bar {
+  max-width: 1200px;
+  margin: 0 auto 1rem auto;
+  display: flex;
+  justify-content: flex-end;
+}
+
 .album-detail-container {
   max-width: 1200px;
   margin: 0 auto;

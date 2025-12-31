@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
 import { albumStorage, songStorage } from '../services/storage'
 import { Album, Song, Track } from '../types'
+import ProfileDropdown from '../components/ProfileDropdown'
 import './CreateAlbum.css'
 
 const CreateAlbum = () => {
@@ -113,6 +114,9 @@ const CreateAlbum = () => {
 
   return (
     <div className="create-album">
+      <div className="create-album-header-bar">
+        {user && <ProfileDropdown user={user} />}
+      </div>
       <div className="create-album-container">
         <h1>Create Album</h1>
         
