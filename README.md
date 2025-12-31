@@ -101,6 +101,53 @@ npm run dev
 
 The API will be available at `http://localhost:3001`
 
+## Testing
+
+### Frontend Tests
+
+Run frontend tests:
+```bash
+cd frontend
+npm test
+```
+
+Run tests with UI:
+```bash
+npm run test:ui
+```
+
+Run tests with coverage:
+```bash
+npm run test:coverage
+```
+
+### Backend Tests
+
+Run backend tests:
+```bash
+cd backend
+npm test
+```
+
+Run tests with UI:
+```bash
+npm run test:ui
+```
+
+Run tests with coverage:
+```bash
+npm run test:coverage
+```
+
+### Test Structure
+
+- **Frontend**: Component tests, API service tests, integration tests
+- **Backend**: API route tests, database tests, file upload tests
+
+Tests use:
+- **Frontend**: Vitest, React Testing Library, MSW (Mock Service Worker)
+- **Backend**: Vitest, Supertest, SQLite test database
+
 ### Running Both
 
 In separate terminals:

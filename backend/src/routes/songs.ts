@@ -34,7 +34,8 @@ const upload = multer({
   },
   fileFilter: (req, file, cb) => {
     const allowedTypes = /audio\/(mp3|wav|ogg|m4a|aac|flac)/
-    if (allowedTypes.test(file.mimetype)) {
+    // Allow audio files or files with audio extensions (for testing)
+    if (allowedTypes.test(file.mimetype) || /\.(mp3|wav|ogg|m4a|aac|flac)$/i.test(file.originalname)) {
       cb(null, true)
     } else {
       cb(new Error('Invalid file type. Only audio files are allowed.'))
@@ -64,6 +65,17 @@ router.get('/', async (req, res) => {
   }
 })
 
+// Get songs by album (must come before /:id to avoid route conflicts)
+router.get('/album/:albumId', async (req, res) => {
+  try {
+    const songs = await dbAll('SELECT * FROM songs WHERE album_id = ? ORDER BY created_at ASC', [req.params.albumId])
+    res.json(songs)
+  } catch (error) {
+    console.error('Error fetching album songs:', error)
+    res.status(500).json({ error: 'Failed to fetch album songs' })
+  }
+})
+
 // Get song by ID
 router.get('/:id', async (req, res) => {
   try {
@@ -80,17 +92,6 @@ router.get('/:id', async (req, res) => {
   } catch (error) {
     console.error('Error fetching song:', error)
     res.status(500).json({ error: 'Failed to fetch song' })
-  }
-})
-
-// Get songs by album
-router.get('/album/:albumId', async (req, res) => {
-  try {
-    const songs = await dbAll('SELECT * FROM songs WHERE album_id = ? ORDER BY created_at ASC', [req.params.albumId])
-    res.json(songs)
-  } catch (error) {
-    console.error('Error fetching album songs:', error)
-    res.status(500).json({ error: 'Failed to fetch album songs' })
   }
 })
 

@@ -15,7 +15,9 @@ router.get('/song/:songId/count', async (req, res) => {
       'SELECT COUNT(*) as count FROM likes WHERE song_id = ?',
       [req.params.songId]
     )
-    res.json({ count: result?.count || 0 })
+    // SQLite COUNT returns a number, ensure it's converted properly
+    const count = result?.count ? Number(result.count) : 0
+    res.json({ count })
   } catch (error) {
     console.error('Error fetching like count:', error)
     res.status(500).json({ error: 'Failed to fetch like count' })
