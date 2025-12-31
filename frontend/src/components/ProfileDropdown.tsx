@@ -90,7 +90,7 @@ const ProfileDropdown = ({ user }: ProfileDropdownProps) => {
             className="dropdown-item"
             onClick={() => setIsOpen(false)}
           >
-            <span className="dropdown-icon">👤</span>
+            <span className="dropdown-icon profile-icon"></span>
             <span>View Profile</span>
           </Link>
 
@@ -99,7 +99,7 @@ const ProfileDropdown = ({ user }: ProfileDropdownProps) => {
             className="dropdown-item"
             onClick={() => setIsOpen(false)}
           >
-            <span className="dropdown-icon">🎵</span>
+            <span className="dropdown-icon library-icon"></span>
             <span>My Albums</span>
           </Link>
 
@@ -108,7 +108,7 @@ const ProfileDropdown = ({ user }: ProfileDropdownProps) => {
             className="dropdown-item"
             onClick={() => setIsOpen(false)}
           >
-            <span className="dropdown-icon">⭐</span>
+            <span className="dropdown-icon heart-icon"></span>
             <span>My Favorites</span>
           </Link>
 
@@ -119,7 +119,7 @@ const ProfileDropdown = ({ user }: ProfileDropdownProps) => {
             className="dropdown-item"
             onClick={() => setIsOpen(false)}
           >
-            <span className="dropdown-icon">⚙️</span>
+            <span className="dropdown-icon settings-icon"></span>
             <span>Settings</span>
           </Link>
 
@@ -129,7 +129,7 @@ const ProfileDropdown = ({ user }: ProfileDropdownProps) => {
             className="dropdown-item logout-item"
             onClick={handleLogout}
           >
-            <span className="dropdown-icon">🚪</span>
+            <span className="dropdown-icon logout-icon"></span>
             <span>Logout</span>
           </button>
         </div>
