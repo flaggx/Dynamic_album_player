@@ -1,17 +1,142 @@
-import AudioPlayer from './components/AudioPlayer'
-import './App.css'
+import React from 'react'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { Auth0Provider } from '@auth0/auth0-react'
+import ProtectedRoute from './components/ProtectedRoute'
+import Home from './pages/Home'
+import Login from './pages/Login'
+import Callback from './pages/Callback'
+
+const domain = import.meta.env.VITE_AUTH0_DOMAIN
+const clientId = import.meta.env.VITE_AUTH0_CLIENT_ID
+const audience = import.meta.env.VITE_AUTH0_AUDIENCE
+const redirectUri = import.meta.env.VITE_AUTH0_REDIRECT_URI || window.location.origin
+
+// Error boundary component
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props)
+    this.state = { hasError: false, error: null }
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error }
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('Error caught by boundary:', error, errorInfo)
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          height: '100vh',
+          flexDirection: 'column',
+          gap: '1rem',
+          padding: '2rem',
+          textAlign: 'center',
+          background: '#f5f5f5'
+        }}>
+          <h2 style={{ color: '#c33' }}>Something went wrong</h2>
+          <p>{this.state.error?.message || 'An error occurred'}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            style={{
+              padding: '0.5rem 1rem',
+              background: '#667eea',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            Reload Page
+          </button>
+        </div>
+      )
+    }
+
+    return this.props.children
+  }
+}
 
 function App() {
+  console.log('App rendering, domain:', domain, 'clientId:', clientId ? 'set' : 'missing')
+  
+  // Always render router, but conditionally wrap with Auth0Provider
+  const routes = (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/callback" element={<Callback />} />
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <Home />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
+  )
+
+  if (!domain || !clientId) {
+    console.log('Auth0 not configured, showing config message')
+    return (
+      <ErrorBoundary>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          height: '100vh',
+          flexDirection: 'column',
+          gap: '1rem',
+          padding: '2rem',
+          textAlign: 'center',
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          color: 'white'
+        }}>
+          <h2>Auth0 Configuration Missing</h2>
+          <p>Please set VITE_AUTH0_DOMAIN and VITE_AUTH0_CLIENT_ID in your .env file</p>
+          <p>See .env.example for reference</p>
+          <div style={{ marginTop: '2rem', padding: '1rem', background: 'rgba(255,255,255,0.2)', borderRadius: '8px' }}>
+            <p><strong>Quick setup:</strong></p>
+            <code style={{ display: 'block', marginTop: '0.5rem', background: 'rgba(0,0,0,0.2)', padding: '0.5rem', borderRadius: '4px' }}>
+              cp .env.example .env
+            </code>
+            <p style={{ marginTop: '1rem', fontSize: '0.9rem' }}>
+              Then edit .env with your Auth0 credentials
+            </p>
+          </div>
+        </div>
+      </ErrorBoundary>
+    )
+  }
+
+  console.log('Rendering with Auth0Provider')
   return (
-    <div className="app">
-      <header className="app-header">
-        <h1>Dynamic Album Player</h1>
-        <p>Toggle individual tracks to customize your listening experience</p>
-      </header>
-      <main className="app-main">
-        <AudioPlayer />
-      </main>
-    </div>
+    <ErrorBoundary>
+      <Auth0Provider
+        domain={domain}
+        clientId={clientId}
+        authorizationParams={{
+          redirect_uri: redirectUri,
+          audience: audience,
+        }}
+        useRefreshTokens={true}
+        cacheLocation="localstorage"
+      >
+        {routes}
+      </Auth0Provider>
+    </ErrorBoundary>
   )
 }
 

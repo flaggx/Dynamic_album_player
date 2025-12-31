@@ -6,6 +6,7 @@ A web application that allows creators to release an album where users can selec
 
 - 🎵 Multi-track audio playback with Web Audio API
 - 🎛️ Real-time track toggling (enable/disable individual tracks)
+- 🔐 Authentication with Auth0
 - 🎨 Modern, responsive UI
 - 🐳 Docker deployment ready
 - ⚡ Built with React + TypeScript + Vite
@@ -14,6 +15,7 @@ A web application that allows creators to release an album where users can selec
 
 - **Frontend**: React 18 + TypeScript
 - **Build Tool**: Vite
+- **Authentication**: Auth0
 - **Audio**: Web Audio API
 - **Deployment**: Docker + Nginx
 
@@ -30,7 +32,22 @@ A web application that allows creators to release an album where users can selec
 npm install
 ```
 
-2. Start development server:
+2. Set up Auth0:
+   - Create an account at [Auth0](https://auth0.com) (free tier available)
+   - Create a new Application (Single Page Application)
+   - Go to Settings and copy your Domain and Client ID
+   - Add `http://localhost:3000` to Allowed Callback URLs, Allowed Logout URLs, and Allowed Web Origins
+   - Create a `.env` file in the root directory:
+   ```bash
+   cp .env.example .env
+   ```
+   - Update `.env` with your Auth0 credentials:
+   ```
+   VITE_AUTH0_DOMAIN=your-domain.auth0.com
+   VITE_AUTH0_CLIENT_ID=your-client-id
+   ```
+
+3. Start development server:
 ```bash
 npm run dev
 ```
@@ -103,12 +120,19 @@ Dynamic_album_player/
 ├── src/
 │   ├── components/
 │   │   ├── AudioPlayer.tsx      # Main audio player component
-│   │   └── AudioPlayer.css
-│   ├── App.tsx                  # Main app component
-│   ├── App.css
+│   │   ├── AudioPlayer.css
+│   │   └── ProtectedRoute.tsx   # Auth-protected route wrapper
+│   ├── pages/
+│   │   ├── Home.tsx             # Main app page (protected)
+│   │   ├── Home.css
+│   │   ├── Login.tsx             # Auth0 login page
+│   │   ├── Callback.tsx          # Auth0 callback handler
+│   │   └── Auth.css              # Auth page styles
+│   ├── App.tsx                  # Main app component with routing
 │   ├── main.tsx                 # Entry point
 │   └── index.css               # Global styles
 ├── public/                      # Static assets (add audio files here)
+├── .env.example                 # Environment variables template
 ├── Dockerfile                   # Docker build configuration
 ├── docker-compose.yml           # Docker Compose configuration
 ├── nginx.conf                   # Nginx server configuration
