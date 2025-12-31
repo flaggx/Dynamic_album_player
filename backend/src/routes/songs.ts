@@ -41,7 +41,7 @@ const upload = multer({
     
     // Check MIME type and extension
     if (!allowedTypes.test(file.mimetype) && !allowedExtensions.test(file.originalname)) {
-      return cb(new Error('Invalid file type. Only audio files (mp3, wav, ogg, m4a, aac, flac) are allowed.'))
+      return cb(new CustomError('Invalid file type. Only audio files (mp3, wav, ogg, m4a, aac, flac) are allowed.', 400))
     }
     
     cb(null, true)

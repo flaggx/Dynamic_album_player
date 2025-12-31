@@ -11,6 +11,9 @@ beforeAll(async () => {
     fs.unlinkSync(TEST_DB_PATH)
   }
   process.env.DATABASE_PATH = TEST_DB_PATH
+  // Disable Auth0 in tests
+  process.env.AUTH0_DOMAIN = ''
+  process.env.AUTH0_AUDIENCE = ''
   await initDatabase()
 })
 
@@ -32,14 +35,14 @@ beforeEach(async () => {
   // Clear all tables before each test (in correct order to respect foreign keys)
   return new Promise<void>((resolve, reject) => {
     db.serialize(() => {
-      db.run('DELETE FROM favorites', (err) => { if (err) console.error('Error deleting favorites:', err) })
-      db.run('DELETE FROM likes', (err) => { if (err) console.error('Error deleting likes:', err) })
-      db.run('DELETE FROM subscriptions', (err) => { if (err) console.error('Error deleting subscriptions:', err) })
-      db.run('DELETE FROM tracks', (err) => { if (err) console.error('Error deleting tracks:', err) })
-      db.run('DELETE FROM songs', (err) => { if (err) console.error('Error deleting songs:', err) })
-      db.run('DELETE FROM albums', (err) => { if (err) console.error('Error deleting albums:', err) })
+      db.run('DELETE FROM favorites', (err) => { if (err && !err.message?.includes('locked')) console.error('Error deleting favorites:', err) })
+      db.run('DELETE FROM likes', (err) => { if (err && !err.message?.includes('locked')) console.error('Error deleting likes:', err) })
+      db.run('DELETE FROM subscriptions', (err) => { if (err && !err.message?.includes('locked')) console.error('Error deleting subscriptions:', err) })
+      db.run('DELETE FROM tracks', (err) => { if (err && !err.message?.includes('locked')) console.error('Error deleting tracks:', err) })
+      db.run('DELETE FROM songs', (err) => { if (err && !err.message?.includes('locked')) console.error('Error deleting songs:', err) })
+      db.run('DELETE FROM albums', (err) => { if (err && !err.message?.includes('locked')) console.error('Error deleting albums:', err) })
       db.run('DELETE FROM users', (err) => {
-        if (err) {
+        if (err && !err.message?.includes('locked')) {
           console.error('Error deleting users:', err)
           reject(err)
         } else {

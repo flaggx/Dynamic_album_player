@@ -42,7 +42,7 @@ const Login = () => {
     <div className="auth-container">
       <div className="auth-card">
         <h1>Welcome</h1>
-        <p className="auth-subtitle">Sign in to access Dynamic Album Player</p>
+        <p className="auth-subtitle">Sign in to access Lost Camp Studios</p>
 
         <button onClick={handleLogin} className="auth-button">
           Log In / Sign Up

@@ -12,8 +12,7 @@ const Sidebar = () => {
     <div className="sidebar">
       <div className="sidebar-content">
         <div className="sidebar-logo">
-          <span className="logo-icon">🎵</span>
-          <span className="logo-text">Dynamic Player</span>
+          <span className="logo-text">Lost Camp Studios</span>
         </div>
 
         <nav className="sidebar-nav">
@@ -21,7 +20,7 @@ const Sidebar = () => {
             to="/" 
             className={`nav-item ${isActive('/') ? 'active' : ''}`}
           >
-            <span className="nav-icon">🏠</span>
+            <span className="nav-icon">⌂</span>
             <span className="nav-text">Home</span>
           </Link>
 
@@ -29,7 +28,7 @@ const Sidebar = () => {
             to="/discover" 
             className={`nav-item ${isActive('/discover') ? 'active' : ''}`}
           >
-            <span className="nav-icon">🔍</span>
+            <span className="nav-icon search-icon"></span>
             <span className="nav-text">Search</span>
           </Link>
 
@@ -37,7 +36,7 @@ const Sidebar = () => {
             to="/my-albums" 
             className={`nav-item ${isActive('/my-albums') ? 'active' : ''}`}
           >
-            <span className="nav-icon">📚</span>
+            <span className="nav-icon library-icon"></span>
             <span className="nav-text">Your Library</span>
           </Link>
         </nav>
@@ -45,7 +44,7 @@ const Sidebar = () => {
         <div className="sidebar-section">
           <div className="sidebar-section-header">
             <button className="create-playlist-btn">
-              <span className="nav-icon">➕</span>
+              <span className="nav-icon">+</span>
               <span className="nav-text">Create Album</span>
             </button>
           </div>
@@ -60,7 +59,7 @@ const Sidebar = () => {
             <span className="section-title">Your Playlists</span>
           </div>
           <Link to="/my-favorites" className="nav-item">
-            <span className="nav-icon">⭐</span>
+            <span className="nav-icon heart-icon"></span>
             <span className="nav-text">Liked Songs</span>
           </Link>
         </div>

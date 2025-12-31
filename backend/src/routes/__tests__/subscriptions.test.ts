@@ -1,15 +1,32 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import request from 'supertest'
 import express from 'express'
-import subscriptionRoutes from '../subscriptions'
 import { db } from '../../database/init'
 import { promisify } from 'util'
+import { errorHandler } from '../../middleware/errorHandler.js'
 
-const dbRun = promisify(db.run.bind(db))
+const dbRun = promisify(db.run.bind(db)) as (sql: string, ...params: any[]) => Promise<any>
+
+// Mock authentication middleware - must be before route imports
+vi.mock('../../middleware/auth.js', () => ({
+  authenticate: (req: any, res: any, next: any) => {
+    req.auth = { sub: 'user1' }
+    next()
+  },
+  optionalAuth: (req: any, res: any, next: any) => {
+    req.auth = { sub: 'user1' }
+    next()
+  },
+  getUserId: (req: any) => req.auth?.sub || 'user1',
+  AuthRequest: {} as any,
+}))
+
+import subscriptionRoutes from '../subscriptions'
 
 const app = express()
 app.use(express.json())
 app.use('/api/subscriptions', subscriptionRoutes)
+app.use(errorHandler)
 
 describe('Subscriptions API', () => {
   beforeEach(async () => {
@@ -28,10 +45,10 @@ describe('Subscriptions API', () => {
     it('should create subscription', async () => {
       const response = await request(app)
         .post('/api/subscriptions')
-        .send({ userId: 'user1', artistId: 'artist1' })
+        .send({ artistId: 'artist1' }) // userId comes from auth token
 
       expect(response.status).toBe(201)
-      expect(response.body.user_id).toBe('user1')
+      expect(response.body.user_id).toBe('user1') // From mocked auth
       expect(response.body.artist_id).toBe('artist1')
     })
 
@@ -68,7 +85,7 @@ describe('Subscriptions API', () => {
     })
   })
 
-  describe('DELETE /api/subscriptions/:userId/:artistId', () => {
+  describe('DELETE /api/subscriptions/:artistId', () => {
     it('should unsubscribe', async () => {
       await dbRun(
         `INSERT INTO subscriptions (id, user_id, artist_id)
@@ -77,7 +94,7 @@ describe('Subscriptions API', () => {
       )
 
       const response = await request(app)
-        .delete('/api/subscriptions/user1/artist1')
+        .delete('/api/subscriptions/artist1')
 
       expect(response.status).toBe(204)
 

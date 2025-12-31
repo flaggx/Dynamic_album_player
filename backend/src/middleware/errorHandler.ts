@@ -44,6 +44,16 @@ export const errorHandler = (
     return res.status(400).json({ error: 'File upload error: ' + err.message })
   }
 
+  // Errors from fileFilter (multer fileFilter can throw regular Errors)
+  if (err.message && err.message.includes('Invalid file type')) {
+    return res.status(400).json({ error: err.message })
+  }
+
+  // SQLite database locked errors
+  if ((err as any).code === 'SQLITE_BUSY' || err.message?.includes('database is locked')) {
+    return res.status(503).json({ error: 'Database is temporarily busy. Please try again.' })
+  }
+
   // Custom API errors
   const status = (err as ApiError).status || (err as ApiError).statusCode || 500
   const message = err.message || 'Internal server error'

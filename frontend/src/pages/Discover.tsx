@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
 import toast from 'react-hot-toast'
 import { albumsApi, subscriptionsApi } from '../services/api'
@@ -11,11 +11,18 @@ import './Discover.css'
 
 const Discover = () => {
   const { user } = useAuth0()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [albums, setAlbums] = useState<Album[]>([])
   const [filter, setFilter] = useState<'all' | 'subscribed'>('all')
   const [subscriptionStatus, setSubscriptionStatus] = useState<Map<string, boolean>>(new Map())
-  const [searchQuery, setSearchQuery] = useState('')
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '')
   const [isLoading, setIsLoading] = useState(true)
+
+  // Update search query from URL params
+  useEffect(() => {
+    const urlSearch = searchParams.get('search') || ''
+    setSearchQuery(urlSearch)
+  }, [searchParams])
 
   useEffect(() => {
     loadAlbums()
@@ -187,7 +194,6 @@ const Discover = () => {
               </div>
             )}
           </div>
-        </div>
         </div>
       </div>
     </div>

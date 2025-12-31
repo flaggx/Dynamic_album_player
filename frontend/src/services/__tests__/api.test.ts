@@ -74,17 +74,19 @@ describe('API Service', () => {
       const newAlbum = {
         title: 'New Album',
         artist: 'New Artist',
-        artistId: 'user1',
         description: 'Description',
-        songs: [],
-        likes: 0,
-        subscribers: 0,
+        coverImageFile: new File(['image content'], 'cover.jpg', { type: 'image/jpeg' }),
       }
 
       const mockCreated = {
         id: 'new-album',
-        ...newAlbum,
+        title: 'New Album',
+        artist: 'New Artist',
+        description: 'Description',
+        artist_id: 'user1',
+        cover_image: '/uploads/cover.jpg',
         created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
       }
 
       mockFetch.mockResolvedValueOnce({
@@ -98,9 +100,10 @@ describe('API Service', () => {
       const callArgs = mockFetch.mock.calls[0]
       expect(callArgs[0]).toContain('/api/albums')
       expect(callArgs[1]?.method).toBe('POST')
-      // Check body contains the album data
-      const body = JSON.parse(callArgs[1]?.body as string)
-      expect(body.title).toBe('New Album')
+      // Check body is FormData (not JSON) when coverImageFile is provided
+      expect(callArgs[1]?.body).toBeInstanceOf(FormData)
+      const formData = callArgs[1]?.body as FormData
+      expect(formData.get('title')).toBe('New Album')
     })
   })
 

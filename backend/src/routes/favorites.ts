@@ -88,14 +88,24 @@ router.post('/toggle', authenticate, async (req: AuthRequest, res, next) => {
       )
       res.json({ isFavorited: false })
     } else {
-      // Favorite
+      // Favorite - use INSERT OR IGNORE to handle race conditions
       const favoriteId = uuidv4()
-      await dbRun(
-        `INSERT INTO favorites (id, user_id, song_id)
-         VALUES (?, ?, ?)`,
-        [favoriteId, userId, songId]
-      )
-      res.json({ isFavorited: true })
+      try {
+        await dbRun(
+          `INSERT INTO favorites (id, user_id, song_id)
+           VALUES (?, ?, ?)`,
+          [favoriteId, userId, songId]
+        )
+        res.json({ isFavorited: true })
+      } catch (error: any) {
+        // If insert fails due to constraint, check if it was actually inserted
+        if (error.code === 'SQLITE_CONSTRAINT' || error.message?.includes('UNIQUE')) {
+          // Already exists, return true
+          res.json({ isFavorited: true })
+        } else {
+          throw error
+        }
+      }
     }
   } catch (error) {
     next(error)

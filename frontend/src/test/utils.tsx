@@ -1,18 +1,12 @@
 import { ReactElement } from 'react'
 import { render, RenderOptions } from '@testing-library/react'
 import { BrowserRouter } from 'react-router-dom'
-import { Auth0Provider } from '@auth0/auth0-react'
+import { Auth0Provider } from '../test/mocks/auth0'
 import { PlayerProvider } from '../contexts/PlayerContext'
 
 const AllTheProviders = ({ children }: { children: React.ReactNode }) => {
   return (
-    <Auth0Provider
-      domain="test-domain.auth0.com"
-      clientId="test-client-id"
-      authorizationParams={{
-        redirect_uri: window.location.origin,
-      }}
-    >
+    <Auth0Provider>
       <BrowserRouter
         future={{
           v7_startTransition: true,

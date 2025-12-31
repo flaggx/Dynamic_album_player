@@ -63,7 +63,7 @@ router.get('/', optionalAuth, async (req, res, next) => {
 
     const params: any[] = []
     if (search && typeof search === 'string') {
-      query += ` WHERE a.title LIKE ? OR a.artist LIKE ? OR a.description LIKE ?`
+      query += ` WHERE LOWER(a.title) LIKE LOWER(?) OR LOWER(a.artist) LIKE LOWER(?) OR LOWER(a.description) LIKE LOWER(?)`
       const searchTerm = `%${search}%`
       params.push(searchTerm, searchTerm, searchTerm)
     }

@@ -1,8 +1,15 @@
-import { expect, afterEach, beforeAll, afterAll } from 'vitest'
+import { expect, afterEach, beforeAll, afterAll, vi } from 'vitest'
 import { cleanup } from '@testing-library/react'
 import * as matchers from '@testing-library/jest-dom/matchers'
 import '@testing-library/jest-dom/vitest'
 import { server } from './mocks/server'
+import * as auth0Mocks from './mocks/auth0'
+
+// Mock Auth0 globally
+vi.mock('@auth0/auth0-react', () => ({
+  useAuth0: auth0Mocks.useAuth0,
+  Auth0Provider: auth0Mocks.Auth0Provider,
+}))
 
 // Extend Vitest's expect with jest-dom matchers
 expect.extend(matchers)

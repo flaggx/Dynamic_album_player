@@ -10,11 +10,17 @@ if (!fs.existsSync(dbDir)) {
   fs.mkdirSync(dbDir, { recursive: true })
 }
 
-export const db = new sqlite3.Database(dbPath, (err: Error | null) => {
+export const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err: Error | null) => {
   if (err) {
     console.error('Error opening database:', err)
   } else {
     console.log('✅ Connected to SQLite database')
+    // Configure SQLite for better concurrency - set busy timeout
+    db.run('PRAGMA busy_timeout = 5000', (pragmaErr) => {
+      if (pragmaErr) {
+        console.warn('Warning: Could not set busy_timeout:', pragmaErr)
+      }
+    })
   }
 })
 
