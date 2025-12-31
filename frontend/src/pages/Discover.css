@@ -1,207 +1,197 @@
-.discover {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 2rem;
-}
-
-.discover-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  position: relative;
-}
-
-.home-link-top {
-  position: absolute;
-  top: 0;
-  left: 0;
-  color: white;
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 1rem;
-  padding: 0.5rem 1rem;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  transition: background 0.2s;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  z-index: 10;
-}
-
-.home-link-top:hover {
-  background: rgba(255, 255, 255, 0.3);
-  border-color: rgba(255, 255, 255, 0.5);
-}
-
 .discover-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin-top: 3rem;
-}
-
-.discover-header-right {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
+  margin-bottom: 24px;
 }
 
 .discover-header h1 {
-  color: white;
-  font-size: 2.5rem;
-  margin: 0;
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: var(--spotify-white);
 }
 
 .filter-buttons {
   display: flex;
-  gap: 0.5rem;
+  gap: 8px;
 }
 
-.filter-buttons button {
-  padding: 0.5rem 1.5rem;
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 8px;
+.filter-btn {
+  padding: 6px 16px;
+  background: var(--spotify-gray);
+  color: var(--spotify-white);
+  border: none;
+  border-radius: 20px;
   cursor: pointer;
   font-weight: 500;
+  font-size: 14px;
   transition: all 0.2s;
 }
 
-.filter-buttons button:hover {
-  background: rgba(255, 255, 255, 0.3);
+.filter-btn:hover {
+  background: #3e3e3e;
+  transform: scale(1.05);
 }
 
-.filter-buttons button.active {
-  background: white;
-  color: #667eea;
-  border-color: white;
+.filter-btn.active {
+  background: var(--spotify-white);
+  color: var(--spotify-black);
 }
 
 .empty-state {
   text-align: center;
   padding: 4rem 2rem;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 20px;
-  color: #333;
+  color: var(--spotify-light-gray);
 }
 
-.create-link {
+.spotify-button {
   display: inline-block;
   margin-top: 1rem;
-  padding: 0.75rem 2rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  padding: 12px 32px;
+  background: var(--spotify-white);
+  color: var(--spotify-black);
   text-decoration: none;
-  border-radius: 8px;
-  font-weight: 600;
+  border-radius: 500px;
+  font-weight: 700;
+  font-size: 14px;
   transition: transform 0.2s;
 }
 
-.create-link:hover {
-  transform: translateY(-2px);
+.spotify-button:hover {
+  transform: scale(1.05);
 }
 
 .albums-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 24px;
 }
 
-.album-card {
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-  transition: transform 0.2s, box-shadow 0.2s;
+.spotify-card {
+  background-color: var(--spotify-gray);
+  border-radius: 8px;
+  padding: 16px;
+  transition: background-color 0.2s;
+  position: relative;
 }
 
-.album-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+.spotify-card:hover {
+  background-color: #3e3e3e;
 }
 
-.album-link {
+.card-link {
   text-decoration: none;
   color: inherit;
   display: block;
 }
 
-.album-cover {
+.card-image-container {
+  position: relative;
   width: 100%;
   aspect-ratio: 1;
-  background: #f0f0f0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  margin-bottom: 16px;
+  border-radius: 4px;
   overflow: hidden;
+  background-color: #333;
 }
 
-.album-cover img {
+.card-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.album-placeholder {
-  font-size: 4rem;
-  opacity: 0.5;
-}
-
-.album-info {
-  padding: 1rem;
-}
-
-.album-info h3 {
-  margin: 0 0 0.5rem 0;
-  color: #333;
-  font-size: 1.2rem;
-}
-
-.album-artist {
-  margin: 0 0 0.25rem 0;
-  color: #666;
-  font-size: 0.9rem;
-}
-
-.album-songs {
-  margin: 0;
-  color: #999;
-  font-size: 0.85rem;
-}
-
-.album-actions {
-  padding: 0 1rem 1rem 1rem;
+.card-image-placeholder {
+  width: 100%;
+  height: 100%;
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: center;
+  font-size: 64px;
+  background: linear-gradient(135deg, #450af5 0%, #c44569 100%);
 }
 
-.subscribe-button {
-  padding: 0.5rem 1rem;
-  background: #667eea;
-  color: white;
+.play-button-overlay {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--spotify-green);
   border: none;
-  border-radius: 6px;
+  color: var(--spotify-black);
+  font-size: 20px;
   cursor: pointer;
-  font-weight: 500;
-  font-size: 0.9rem;
-  transition: background 0.2s;
-}
-
-.subscribe-button:hover {
-  background: #5568d3;
-}
-
-.subscribe-button.subscribed {
-  background: #28a745;
-}
-
-.album-stats {
   display: flex;
-  gap: 1rem;
-  font-size: 0.9rem;
-  color: #666;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: all 0.3s;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
 }
 
+.spotify-card:hover .play-button-overlay {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.play-button-overlay:hover {
+  background: var(--spotify-green-hover);
+  transform: translateY(0) scale(1.1);
+}
+
+.card-info {
+  min-height: 62px;
+}
+
+.card-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--spotify-white);
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-subtitle {
+  font-size: 14px;
+  color: var(--spotify-light-gray);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subscribe-btn-small {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.6);
+  color: var(--spotify-white);
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: all 0.2s;
+}
+
+.spotify-card:hover .subscribe-btn-small {
+  opacity: 1;
+}
+
+.subscribe-btn-small:hover {
+  background: rgba(0, 0, 0, 0.8);
+  transform: scale(1.1);
+}
+
+.subscribe-btn-small.subscribed {
+  background: var(--spotify-green);
+  color: var(--spotify-black);
+}

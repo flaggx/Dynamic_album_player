@@ -1,73 +1,38 @@
-.settings-page {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 2rem;
-}
-
-.settings-header-bar {
-  max-width: 800px;
-  margin: 0 auto 1rem auto;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.settings-header-bar .home-link-top {
-  color: white;
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 1rem;
-  padding: 0.5rem 1rem;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  transition: background 0.2s;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-}
-
-.settings-header-bar .home-link-top:hover {
-  background: rgba(255, 255, 255, 0.3);
-  border-color: rgba(255, 255, 255, 0.5);
-}
-
 .settings-container {
-  max-width: 800px;
+  max-width: 900px;
   margin: 0 auto;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 20px;
-  padding: 2rem;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 }
 
 .settings-container h1 {
-  margin: 0 0 2rem 0;
-  color: #333;
-  font-size: 2.5rem;
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--spotify-white);
+  margin-bottom: 32px;
 }
 
 .settings-section {
-  margin-bottom: 3rem;
-  padding-bottom: 2rem;
-  border-bottom: 2px solid #e0e0e0;
+  margin-bottom: 32px;
+  padding-bottom: 32px;
+  border-bottom: 1px solid var(--spotify-gray);
 }
 
-.settings-section:last-of-type {
+.settings-section:last-child {
   border-bottom: none;
 }
 
 .settings-section h2 {
-  margin: 0 0 1.5rem 0;
-  color: #333;
-  font-size: 1.5rem;
-  border-bottom: 2px solid #667eea;
-  padding-bottom: 0.5rem;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--spotify-white);
+  margin-bottom: 16px;
 }
 
 .settings-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 0;
-  gap: 1rem;
+  padding: 16px 0;
+  gap: 16px;
 }
 
 .settings-item-info {
@@ -76,34 +41,35 @@
 
 .settings-item-info label {
   display: block;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 0.25rem;
-  font-size: 1rem;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--spotify-white);
+  margin-bottom: 4px;
 }
 
 .settings-value {
+  font-size: 14px;
+  color: var(--spotify-light-gray);
   margin: 0;
-  color: #666;
-  font-size: 0.95rem;
 }
 
 .settings-value-small {
-  font-size: 0.85rem;
+  font-size: 12px;
   word-break: break-all;
 }
 
 .settings-description {
-  margin: 0.25rem 0 0 0;
-  color: #999;
-  font-size: 0.85rem;
+  font-size: 14px;
+  color: var(--spotify-light-gray);
+  margin: 4px 0 0 0;
 }
 
 .toggle-switch {
   position: relative;
   display: inline-block;
-  width: 50px;
-  height: 26px;
+  width: 44px;
+  height: 24px;
+  cursor: pointer;
 }
 
 .toggle-switch input {
@@ -114,92 +80,95 @@
 
 .toggle-slider {
   position: absolute;
-  cursor: pointer;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: #ccc;
-  transition: 0.3s;
-  border-radius: 26px;
+  background-color: var(--spotify-gray);
+  border-radius: 24px;
+  transition: background-color 0.3s;
 }
 
 .toggle-slider:before {
   position: absolute;
   content: "";
-  height: 20px;
-  width: 20px;
+  height: 18px;
+  width: 18px;
   left: 3px;
   bottom: 3px;
-  background-color: white;
-  transition: 0.3s;
+  background-color: var(--spotify-white);
   border-radius: 50%;
+  transition: transform 0.3s;
 }
 
 .toggle-switch input:checked + .toggle-slider {
-  background-color: #667eea;
+  background-color: var(--spotify-green);
 }
 
 .toggle-switch input:checked + .toggle-slider:before {
-  transform: translateX(24px);
+  transform: translateX(20px);
 }
 
 .settings-select {
-  padding: 0.5rem 1rem;
-  border: 2px solid #e0e0e0;
-  border-radius: 6px;
-  font-size: 0.95rem;
-  background: white;
+  padding: 8px 16px;
+  background-color: var(--spotify-gray);
+  color: var(--spotify-white);
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: inherit;
   cursor: pointer;
-  min-width: 150px;
+  transition: background-color 0.2s;
+}
+
+.settings-select:hover {
+  background-color: #3e3e3e;
 }
 
 .settings-select:focus {
   outline: none;
-  border-color: #667eea;
+  background-color: #3e3e3e;
 }
 
 .settings-button {
-  padding: 0.5rem 1.5rem;
+  padding: 8px 24px;
   border: none;
-  border-radius: 6px;
-  font-size: 0.95rem;
-  font-weight: 500;
+  border-radius: 500px;
+  font-size: 14px;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: transform 0.2s;
 }
 
 .settings-button.secondary {
-  background: #6c757d;
-  color: white;
+  background: var(--spotify-white);
+  color: var(--spotify-black);
 }
 
 .settings-button.secondary:hover {
-  background: #5a6268;
+  transform: scale(1.05);
 }
 
 .settings-button.danger {
-  background: #dc3545;
-  color: white;
+  background: transparent;
+  color: #ff4444;
+  border: 1px solid #ff4444;
 }
 
 .settings-button.danger:hover {
-  background: #c82333;
+  background: rgba(255, 68, 68, 0.1);
+  transform: scale(1.05);
 }
 
 .settings-footer {
-  margin-top: 3rem;
-  padding-top: 2rem;
-  border-top: 2px solid #e0e0e0;
+  margin-top: 32px;
+  padding-top: 32px;
+  border-top: 1px solid var(--spotify-gray);
 }
 
 .settings-note {
+  font-size: 14px;
+  color: var(--spotify-light-gray);
+  line-height: 1.5;
   margin: 0;
-  padding: 1rem;
-  background: #f8f9fa;
-  border-radius: 8px;
-  color: #666;
-  font-size: 0.9rem;
-  line-height: 1.6;
 }
-

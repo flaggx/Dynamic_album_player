@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
 import { albumStorage, subscriptionStorage, likeStorage, favoriteStorage } from '../services/storage'
 import { Album } from '../types'
+import Sidebar from '../components/Sidebar'
 import ProfileDropdown from '../components/ProfileDropdown'
 import './Profile.css'
 
@@ -13,6 +14,7 @@ const Profile = () => {
   const [subscribers, setSubscribers] = useState(0)
   const [isOwnProfile, setIsOwnProfile] = useState(false)
   const [isSubscribed, setIsSubscribed] = useState(false)
+  const [imageError, setImageError] = useState(false)
 
   useEffect(() => {
     const targetUserId = userId || currentUser?.sub
@@ -54,18 +56,29 @@ const Profile = () => {
   const displayEmail = currentUser?.email || ''
 
   return (
-    <div className="profile-page">
-      <div className="profile-header-bar">
-        <Link to="/" className="home-link-top">
-          🏠 Home
-        </Link>
-        {currentUser && <ProfileDropdown user={currentUser} />}
-      </div>
-      <div className="profile-container">
+    <div className="spotify-app">
+      <Sidebar />
+      <div className="main-content">
+        <div className="top-bar">
+          <div className="top-bar-left">
+            <button className="nav-button prev">‹</button>
+            <button className="nav-button next">›</button>
+          </div>
+          <div className="top-bar-right">
+            {currentUser && <ProfileDropdown user={currentUser} />}
+          </div>
+        </div>
+
+        <div className="content-area">
+          <div className="profile-container">
         <div className="profile-header">
           <div className="profile-avatar-large">
-            {currentUser?.picture ? (
-              <img src={currentUser.picture} alt={displayName} />
+            {currentUser?.picture && !imageError ? (
+              <img 
+                src={currentUser.picture} 
+                alt={displayName}
+                onError={() => setImageError(true)}
+              />
             ) : (
               <div className="avatar-placeholder-large">
                 {displayName[0]?.toUpperCase() || 'U'}
@@ -137,6 +150,8 @@ const Profile = () => {
               ))}
             </div>
           )}
+        </div>
+          </div>
         </div>
       </div>
     </div>

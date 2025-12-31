@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
 import { albumStorage, songStorage } from '../services/storage'
 import { Album, Song, Track } from '../types'
+import Sidebar from '../components/Sidebar'
 import ProfileDropdown from '../components/ProfileDropdown'
 import './CreateAlbum.css'
 
@@ -113,15 +114,22 @@ const CreateAlbum = () => {
   }
 
   return (
-    <div className="create-album">
-      <div className="create-album-header-bar">
-        <Link to="/" className="home-link-top">
-          🏠 Home
-        </Link>
-        {user && <ProfileDropdown user={user} />}
-      </div>
-      <div className="create-album-container">
-        <h1>Create Album</h1>
+    <div className="spotify-app">
+      <Sidebar />
+      <div className="main-content">
+        <div className="top-bar">
+          <div className="top-bar-left">
+            <button className="nav-button prev" onClick={() => navigate('/')}>‹</button>
+            <button className="nav-button next">›</button>
+          </div>
+          <div className="top-bar-right">
+            {user && <ProfileDropdown user={user} />}
+          </div>
+        </div>
+
+        <div className="content-area">
+          <div className="create-album-container">
+            <h1>Create Album</h1>
         
         <form onSubmit={handleSubmit} className="album-form">
           <div className="form-section">
@@ -248,6 +256,8 @@ const CreateAlbum = () => {
             </button>
           </div>
         </form>
+          </div>
+        </div>
       </div>
     </div>
   )

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
 import { albumStorage, subscriptionStorage, likeStorage, favoriteStorage } from '../services/storage'
 import { Album } from '../types'
+import Sidebar from '../components/Sidebar'
 import ProfileDropdown from '../components/ProfileDropdown'
 import './Discover.css'
 
@@ -47,80 +48,88 @@ const Discover = () => {
   }
 
   return (
-    <div className="discover">
-      <div className="discover-container">
-        <Link to="/" className="home-link-top">
-          🏠 Home
-        </Link>
-        <div className="discover-header">
-          <h1>Discover Albums</h1>
-          <div className="discover-header-right">
-            {user && <ProfileDropdown user={user} />}
-            <div className="filter-buttons">
-            <button
-              className={filter === 'all' ? 'active' : ''}
-              onClick={() => setFilter('all')}
-            >
-              All Albums
-            </button>
-            <button
-              className={filter === 'subscribed' ? 'active' : ''}
-              onClick={() => setFilter('subscribed')}
-            >
-              Subscriptions
-            </button>
+    <div className="spotify-app">
+      <Sidebar />
+      <div className="main-content">
+        <div className="top-bar">
+          <div className="top-bar-left">
+            <button className="nav-button prev">‹</button>
+            <button className="nav-button next">›</button>
           </div>
+          <div className="top-bar-right">
+            {user && <ProfileDropdown user={user} />}
           </div>
         </div>
 
-        {albums.length === 0 ? (
-          <div className="empty-state">
-            <p>No albums found. Be the first to create one!</p>
-            <Link to="/create-album" className="create-link">
-              Create Album
-            </Link>
+        <div className="content-area">
+          <div className="discover-header">
+            <h1>Search</h1>
+            <div className="filter-buttons">
+              <button
+                className={`filter-btn ${filter === 'all' ? 'active' : ''}`}
+                onClick={() => setFilter('all')}
+              >
+                All
+              </button>
+              <button
+                className={`filter-btn ${filter === 'subscribed' ? 'active' : ''}`}
+                onClick={() => setFilter('subscribed')}
+              >
+                Your Artists
+              </button>
+            </div>
           </div>
-        ) : (
-          <div className="albums-grid">
-            {albums.map(album => (
-              <div key={album.id} className="album-card">
-                <Link to={`/album/${album.id}`} className="album-link">
-                  <div className="album-cover">
-                    {album.coverImage ? (
-                      <img src={album.coverImage} alt={album.title} />
-                    ) : (
-                      <div className="album-placeholder">
-                        <span>🎵</span>
+
+          {albums.length === 0 ? (
+            <div className="empty-state">
+              <p>No albums found. Be the first to create one!</p>
+              <Link to="/create-album" className="spotify-button">
+                Create Album
+              </Link>
+            </div>
+          ) : (
+            <div className="section">
+              <div className="section-header">
+                <h2>{filter === 'all' ? 'All Albums' : 'Your Artists'}</h2>
+              </div>
+              <div className="albums-grid">
+                {albums.map(album => (
+                  <div key={album.id} className="spotify-card">
+                    <Link to={`/album/${album.id}`} className="card-link">
+                      <div className="card-image-container">
+                        {album.coverImage ? (
+                          <img src={album.coverImage} alt={album.title} className="card-image" />
+                        ) : (
+                          <div className="card-image-placeholder">
+                            <span>🎵</span>
+                          </div>
+                        )}
+                        <button className="play-button-overlay">
+                          ▶
+                        </button>
                       </div>
+                      <div className="card-info">
+                        <div className="card-title">{album.title}</div>
+                        <div className="card-subtitle">{album.artist}</div>
+                      </div>
+                    </Link>
+                    {album.artistId !== user?.sub && (
+                      <button
+                        onClick={() => isSubscribed(album.artistId) 
+                          ? handleUnsubscribe(album.artistId)
+                          : handleSubscribe(album.artistId)
+                        }
+                        className={`subscribe-btn-small ${isSubscribed(album.artistId) ? 'subscribed' : ''}`}
+                      >
+                        {isSubscribed(album.artistId) ? '✓' : '+'}
+                      </button>
                     )}
                   </div>
-                  <div className="album-info">
-                    <h3>{album.title}</h3>
-                    <p className="album-artist">{album.artist}</p>
-                    <p className="album-songs">{album.songs.length} song{album.songs.length !== 1 ? 's' : ''}</p>
-                  </div>
-                </Link>
-                <div className="album-actions">
-                  {album.artistId !== user?.sub && (
-                    <button
-                      onClick={() => isSubscribed(album.artistId) 
-                        ? handleUnsubscribe(album.artistId)
-                        : handleSubscribe(album.artistId)
-                      }
-                      className={`subscribe-button ${isSubscribed(album.artistId) ? 'subscribed' : ''}`}
-                    >
-                      {isSubscribed(album.artistId) ? '✓ Subscribed' : '+ Subscribe'}
-                    </button>
-                  )}
-                  <div className="album-stats">
-                    <span>❤️ {album.likes}</span>
-                    <span>👥 {album.subscribers}</span>
-                  </div>
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

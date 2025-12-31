@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
 import { albumStorage, songStorage, subscriptionStorage, likeStorage, favoriteStorage } from '../services/storage'
 import { Album, Song } from '../types'
 import { usePlayer } from '../contexts/PlayerContext'
+import Sidebar from '../components/Sidebar'
 import ProfileDropdown from '../components/ProfileDropdown'
 import './AlbumDetail.css'
 
@@ -84,14 +85,21 @@ const AlbumDetail = () => {
   const isSubscribed = user?.sub ? subscriptionStorage.isSubscribed(user.sub, album.artistId) : false
 
   return (
-    <div className="album-detail">
-      <div className="album-detail-header-bar">
-        <Link to="/" className="home-link-top">
-          🏠 Home
-        </Link>
-        {user && <ProfileDropdown user={user} />}
-      </div>
-      <div className="album-detail-container">
+    <div className="spotify-app">
+      <Sidebar />
+      <div className="main-content">
+        <div className="top-bar">
+          <div className="top-bar-left">
+            <button className="nav-button prev" onClick={() => navigate('/discover')}>‹</button>
+            <button className="nav-button next">›</button>
+          </div>
+          <div className="top-bar-right">
+            {user && <ProfileDropdown user={user} />}
+          </div>
+        </div>
+
+        <div className="content-area">
+          <div className="album-detail-container">
         <div className="album-header">
           <div className="album-cover-large">
             {album.coverImage ? (
@@ -120,7 +128,6 @@ const AlbumDetail = () => {
                   {isSubscribed ? '✓ Subscribed' : '+ Subscribe'}
                 </button>
               )}
-              <Link to="/discover" className="back-link">← Back to Discover</Link>
             </div>
           </div>
         </div>
@@ -181,6 +188,8 @@ const AlbumDetail = () => {
             </p>
           </div>
         )}
+          </div>
+        </div>
       </div>
     </div>
   )

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
 import { albumStorage } from '../services/storage'
 import { Album } from '../types'
+import Sidebar from '../components/Sidebar'
 import ProfileDropdown from '../components/ProfileDropdown'
 import './MyAlbums.css'
 
@@ -23,14 +24,21 @@ const MyAlbums = () => {
   }
 
   return (
-    <div className="my-albums-page">
-      <div className="my-albums-header-bar">
-        <Link to="/" className="home-link-top">
-          🏠 Home
-        </Link>
-        {user && <ProfileDropdown user={user} />}
-      </div>
-      <div className="my-albums-container">
+    <div className="spotify-app">
+      <Sidebar />
+      <div className="main-content">
+        <div className="top-bar">
+          <div className="top-bar-left">
+            <button className="nav-button prev">‹</button>
+            <button className="nav-button next">›</button>
+          </div>
+          <div className="top-bar-right">
+            {user && <ProfileDropdown user={user} />}
+          </div>
+        </div>
+
+        <div className="content-area">
+          <div className="my-albums-container">
         <div className="my-albums-header">
           <h1>My Albums</h1>
           <Link to="/create-album" className="create-album-link">
@@ -70,6 +78,8 @@ const MyAlbums = () => {
             ))}
           </div>
         )}
+          </div>
+        </div>
       </div>
     </div>
   )

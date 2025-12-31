@@ -1,0 +1,136 @@
+.sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 240px;
+  height: 100vh;
+  background-color: var(--spotify-sidebar-bg);
+  padding: 24px 8px;
+  padding-bottom: 90px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 100;
+}
+
+.sidebar-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-height: 100%;
+}
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 12px;
+  margin-bottom: 8px;
+}
+
+.logo-icon {
+  font-size: 32px;
+}
+
+.logo-text {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--spotify-white);
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 12px;
+  color: var(--spotify-light-gray);
+  text-decoration: none;
+  border-radius: 4px;
+  transition: color 0.2s, background-color 0.2s;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.nav-item:hover {
+  color: var(--spotify-white);
+  background-color: var(--spotify-gray);
+}
+
+.nav-item.active {
+  color: var(--spotify-white);
+  background-color: var(--spotify-gray);
+}
+
+.nav-icon {
+  font-size: 20px;
+  width: 24px;
+  text-align: center;
+}
+
+.nav-text {
+  flex: 1;
+}
+
+.sidebar-section {
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--spotify-gray);
+}
+
+.sidebar-section-header {
+  padding: 0 12px 8px 12px;
+}
+
+.section-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--spotify-light-gray);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+.create-playlist-btn {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  color: var(--spotify-light-gray);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: color 0.2s, background-color 0.2s;
+  font-weight: 500;
+  font-size: 14px;
+  width: 100%;
+  text-align: left;
+}
+
+.create-playlist-btn:hover {
+  color: var(--spotify-white);
+  background-color: var(--spotify-gray);
+}
+
+.create-album-link {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 12px;
+  color: var(--spotify-light-gray);
+  text-decoration: none;
+  border-radius: 4px;
+  transition: color 0.2s, background-color 0.2s;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.create-album-link:hover {
+  color: var(--spotify-white);
+  background-color: var(--spotify-gray);
+}
+

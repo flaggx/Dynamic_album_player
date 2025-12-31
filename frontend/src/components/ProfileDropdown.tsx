@@ -13,6 +13,7 @@ interface ProfileDropdownProps {
 
 const ProfileDropdown = ({ user }: ProfileDropdownProps) => {
   const [isOpen, setIsOpen] = useState(false)
+  const [imageError, setImageError] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const { logout } = useAuth0()
   const navigate = useNavigate()
@@ -44,11 +45,16 @@ const ProfileDropdown = ({ user }: ProfileDropdownProps) => {
         onClick={() => setIsOpen(!isOpen)}
         aria-label="Profile menu"
       >
-        {user.picture ? (
-          <img src={user.picture} alt={user.name || user.email} className="profile-avatar" />
+        {user.picture && !imageError ? (
+          <img 
+            src={user.picture} 
+            alt={user.name || user.email} 
+            className="profile-avatar"
+            onError={() => setImageError(true)}
+          />
         ) : (
           <div className="profile-avatar-placeholder">
-            {user.name?.[0] || user.email?.[0] || 'U'}
+            {user.name?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || 'U'}
           </div>
         )}
         <span className="dropdown-arrow">▼</span>
@@ -58,11 +64,16 @@ const ProfileDropdown = ({ user }: ProfileDropdownProps) => {
         <div className="dropdown-menu">
           <div className="dropdown-header">
             <div className="dropdown-user-info">
-              {user.picture ? (
-                <img src={user.picture} alt={user.name || user.email} className="dropdown-avatar" />
+              {user.picture && !imageError ? (
+                <img 
+                  src={user.picture} 
+                  alt={user.name || user.email} 
+                  className="dropdown-avatar"
+                  onError={() => setImageError(true)}
+                />
               ) : (
                 <div className="dropdown-avatar-placeholder">
-                  {user.name?.[0] || user.email?.[0] || 'U'}
+                  {user.name?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || 'U'}
                 </div>
               )}
               <div className="dropdown-user-details">

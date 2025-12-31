@@ -1,47 +1,13 @@
-.create-album {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 2rem;
-}
-
-.create-album-header-bar {
-  max-width: 900px;
-  margin: 0 auto 1rem auto;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.create-album-header-bar .home-link-top {
-  color: white;
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 1rem;
-  padding: 0.5rem 1rem;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  transition: background 0.2s;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-}
-
-.create-album-header-bar .home-link-top:hover {
-  background: rgba(255, 255, 255, 0.3);
-  border-color: rgba(255, 255, 255, 0.5);
-}
-
 .create-album-container {
   max-width: 900px;
   margin: 0 auto;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 20px;
-  padding: 2rem;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 }
 
 .create-album-container h1 {
   margin: 0 0 2rem 0;
-  color: #333;
-  font-size: 2.5rem;
+  color: var(--spotify-white);
+  font-size: 32px;
+  font-weight: 700;
 }
 
 .album-form {
@@ -58,9 +24,10 @@
 
 .form-section h2 {
   margin: 0;
-  color: #333;
-  font-size: 1.5rem;
-  border-bottom: 2px solid #667eea;
+  color: var(--spotify-white);
+  font-size: 20px;
+  font-weight: 700;
+  border-bottom: 1px solid var(--spotify-gray);
   padding-bottom: 0.5rem;
 }
 
@@ -79,31 +46,38 @@
 
 .form-group label {
   font-weight: 500;
-  color: #333;
-  font-size: 0.9rem;
+  color: var(--spotify-white);
+  font-size: 14px;
 }
 
 .form-group input,
 .form-group textarea {
-  padding: 0.75rem;
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
-  font-size: 1rem;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
   font-family: inherit;
-  transition: border-color 0.2s;
+  background-color: var(--spotify-gray);
+  color: var(--spotify-white);
+  transition: background-color 0.2s;
 }
 
 .form-group input:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #667eea;
+  background-color: #3e3e3e;
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+  color: var(--spotify-light-gray);
 }
 
 .song-card {
-  background: #f8f9fa;
-  border-radius: 12px;
+  background: var(--spotify-gray);
+  border-radius: 8px;
   padding: 1.5rem;
-  border: 2px solid #e0e0e0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .song-header {
@@ -115,7 +89,9 @@
 
 .song-header h3 {
   margin: 0;
-  color: #333;
+  color: var(--spotify-white);
+  font-size: 16px;
+  font-weight: 700;
 }
 
 .tracks-section {
@@ -129,6 +105,11 @@
   margin-bottom: 0.5rem;
 }
 
+.tracks-header label {
+  color: var(--spotify-white);
+  font-weight: 500;
+}
+
 .track-row {
   display: flex;
   gap: 0.5rem;
@@ -138,57 +119,90 @@
 
 .track-name-input {
   flex: 1;
-  padding: 0.5rem;
-  border: 2px solid #e0e0e0;
-  border-radius: 6px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 4px;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: var(--spotify-white);
+  font-size: 14px;
+}
+
+.track-name-input:focus {
+  outline: none;
+  background-color: rgba(255, 255, 255, 0.15);
 }
 
 .track-file-input {
   flex: 2;
-  padding: 0.5rem;
-  border: 2px solid #e0e0e0;
-  border-radius: 6px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 4px;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: var(--spotify-white);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.track-file-input::file-selector-button {
+  padding: 6px 12px;
+  margin-right: 12px;
+  background: var(--spotify-white);
+  color: var(--spotify-black);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 12px;
+}
+
+.track-file-input::file-selector-button:hover {
+  transform: scale(1.05);
 }
 
 .add-button {
-  padding: 0.5rem 1rem;
-  background: #667eea;
-  color: white;
+  padding: 8px 16px;
+  background: var(--spotify-white);
+  color: var(--spotify-black);
   border: none;
-  border-radius: 6px;
+  border-radius: 500px;
   cursor: pointer;
-  font-weight: 500;
-  transition: background 0.2s;
+  font-weight: 700;
+  font-size: 14px;
+  transition: transform 0.2s;
 }
 
 .add-button:hover {
-  background: #5568d3;
+  transform: scale(1.05);
 }
 
 .add-button.small {
-  padding: 0.25rem 0.75rem;
-  font-size: 0.9rem;
+  padding: 6px 12px;
+  font-size: 12px;
 }
 
 .remove-button {
-  padding: 0.5rem 1rem;
-  background: #dc3545;
-  color: white;
-  border: none;
-  border-radius: 6px;
+  padding: 8px 16px;
+  background: transparent;
+  color: var(--spotify-light-gray);
+  border: 1px solid var(--spotify-gray);
+  border-radius: 500px;
   cursor: pointer;
   font-weight: 500;
-  transition: background 0.2s;
+  font-size: 14px;
+  transition: all 0.2s;
 }
 
 .remove-button:hover {
-  background: #c82333;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--spotify-white);
+  border-color: var(--spotify-light-gray);
 }
 
 .remove-button.small {
-  padding: 0.25rem 0.5rem;
-  font-size: 1.2rem;
+  padding: 4px 8px;
+  font-size: 18px;
   min-width: 32px;
+  border-radius: 50%;
 }
 
 .form-actions {
@@ -197,38 +211,39 @@
   justify-content: flex-end;
   margin-top: 2rem;
   padding-top: 2rem;
-  border-top: 2px solid #e0e0e0;
+  border-top: 1px solid var(--spotify-gray);
 }
 
 .cancel-button {
-  padding: 0.75rem 2rem;
-  background: #6c757d;
-  color: white;
-  border: none;
-  border-radius: 8px;
+  padding: 12px 32px;
+  background: transparent;
+  color: var(--spotify-white);
+  border: 1px solid var(--spotify-gray);
+  border-radius: 500px;
   cursor: pointer;
-  font-weight: 500;
-  transition: background 0.2s;
+  font-weight: 700;
+  font-size: 14px;
+  transition: all 0.2s;
 }
 
 .cancel-button:hover {
-  background: #5a6268;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--spotify-white);
+  transform: scale(1.05);
 }
 
 .submit-button {
-  padding: 0.75rem 2rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  padding: 12px 32px;
+  background: var(--spotify-white);
+  color: var(--spotify-black);
   border: none;
-  border-radius: 8px;
+  border-radius: 500px;
   cursor: pointer;
-  font-weight: 600;
-  font-size: 1rem;
-  transition: transform 0.2s, box-shadow 0.2s;
+  font-weight: 700;
+  font-size: 14px;
+  transition: transform 0.2s;
 }
 
 .submit-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+  transform: scale(1.05);
 }
-

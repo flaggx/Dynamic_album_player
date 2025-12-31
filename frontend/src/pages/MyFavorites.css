@@ -1,118 +1,93 @@
-.my-favorites-page {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 2rem;
-}
-
-.my-favorites-header-bar {
-  max-width: 1200px;
-  margin: 0 auto 1rem auto;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.my-favorites-header-bar .home-link-top {
-  color: white;
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 1rem;
-  padding: 0.5rem 1rem;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  transition: background 0.2s;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-}
-
-.my-favorites-header-bar .home-link-top:hover {
-  background: rgba(255, 255, 255, 0.3);
-  border-color: rgba(255, 255, 255, 0.5);
-}
-
 .my-favorites-container {
   max-width: 1200px;
   margin: 0 auto;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 20px;
-  padding: 2rem;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 }
 
 .my-favorites-container h1 {
-  margin: 0 0 2rem 0;
-  color: #333;
-  font-size: 2.5rem;
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--spotify-white);
+  margin-bottom: 32px;
 }
 
 .empty-state {
   text-align: center;
   padding: 4rem 2rem;
-  color: #666;
+  color: var(--spotify-light-gray);
 }
 
 .discover-link {
   display: inline-block;
   margin-top: 1rem;
-  padding: 0.75rem 2rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  padding: 12px 32px;
+  background: var(--spotify-white);
+  color: var(--spotify-black);
   text-decoration: none;
-  border-radius: 8px;
-  font-weight: 600;
+  border-radius: 500px;
+  font-weight: 700;
+  font-size: 14px;
   transition: transform 0.2s;
 }
 
 .discover-link:hover {
-  transform: translateY(-2px);
+  transform: scale(1.05);
 }
 
 .favorites-list {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 4px;
 }
 
 .favorite-item {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 1.5rem;
-  background: #f8f9fa;
-  border-radius: 12px;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-radius: 4px;
   text-decoration: none;
   color: inherit;
-  transition: all 0.2s;
-  border: 2px solid transparent;
+  transition: background-color 0.2s;
+  gap: 16px;
 }
 
 .favorite-item:hover {
-  background: #e9ecef;
-  transform: translateX(4px);
-  border-color: #667eea;
+  background-color: var(--spotify-gray);
+}
+
+.favorite-info {
+  flex: 1;
+  min-width: 0;
 }
 
 .favorite-info h3 {
-  margin: 0 0 0.5rem 0;
-  color: #333;
-  font-size: 1.2rem;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--spotify-white);
+  margin: 0 0 4px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .favorite-artist {
-  margin: 0 0 0.25rem 0;
-  color: #666;
-  font-size: 1rem;
+  font-size: 14px;
+  color: var(--spotify-light-gray);
+  margin: 0 0 4px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .favorite-album {
+  font-size: 12px;
+  color: var(--spotify-light-gray);
   margin: 0;
-  color: #999;
-  font-size: 0.9rem;
 }
 
 .favorite-stats {
   display: flex;
-  gap: 1.5rem;
-  font-size: 1rem;
-  color: #666;
+  gap: 16px;
+  font-size: 14px;
+  color: var(--spotify-light-gray);
 }
-

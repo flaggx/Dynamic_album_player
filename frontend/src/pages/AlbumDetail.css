@@ -1,61 +1,24 @@
-.album-detail {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 2rem;
-}
-
-.album-detail-header-bar {
-  max-width: 1200px;
-  margin: 0 auto 1rem auto;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.album-detail-header-bar .home-link-top {
-  color: white;
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 1rem;
-  padding: 0.5rem 1rem;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  transition: background 0.2s;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-}
-
-.album-detail-header-bar .home-link-top:hover {
-  background: rgba(255, 255, 255, 0.3);
-  border-color: rgba(255, 255, 255, 0.5);
-}
-
 .album-detail-container {
   max-width: 1200px;
   margin: 0 auto;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 20px;
-  padding: 2rem;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 }
 
 .album-header {
-  display: grid;
-  grid-template-columns: 200px 1fr;
-  gap: 2rem;
-  margin-bottom: 3rem;
-  padding-bottom: 2rem;
-  border-bottom: 2px solid #e0e0e0;
+  display: flex;
+  gap: 24px;
+  margin-bottom: 32px;
+  padding-bottom: 32px;
+  border-bottom: 1px solid var(--spotify-gray);
 }
 
 .album-cover-large {
-  width: 200px;
-  height: 200px;
-  border-radius: 12px;
+  width: 232px;
+  height: 232px;
+  flex-shrink: 0;
+  border-radius: 4px;
   overflow: hidden;
-  background: #f0f0f0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background: var(--spotify-gray);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
 }
 
 .album-cover-large img {
@@ -65,180 +28,201 @@
 }
 
 .album-placeholder-large {
-  font-size: 5rem;
-  opacity: 0.5;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 96px;
+  background: linear-gradient(135deg, #450af5 0%, #c44569 100%);
+}
+
+.album-info-large {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .album-info-large h1 {
-  margin: 0 0 0.5rem 0;
-  color: #333;
-  font-size: 2.5rem;
+  font-size: 48px;
+  font-weight: 700;
+  color: var(--spotify-white);
+  margin: 0;
+  line-height: 1.2;
 }
 
 .artist-name {
-  margin: 0 0 1rem 0;
-  color: #666;
-  font-size: 1.2rem;
+  font-size: 14px;
+  color: var(--spotify-white);
+  font-weight: 500;
+  margin: 0;
 }
 
 .album-description {
-  margin: 0 0 1rem 0;
-  color: #666;
-  line-height: 1.6;
+  font-size: 14px;
+  color: var(--spotify-light-gray);
+  margin: 8px 0;
+  line-height: 1.5;
 }
 
 .album-stats-large {
   display: flex;
-  gap: 2rem;
-  margin: 1rem 0;
-  color: #666;
-  font-size: 1rem;
+  gap: 16px;
+  margin-top: 8px;
+  font-size: 14px;
+  color: var(--spotify-light-gray);
 }
 
 .album-actions-large {
   display: flex;
-  gap: 1rem;
+  gap: 16px;
   align-items: center;
-  margin-top: 1rem;
+  margin-top: 24px;
 }
 
 .subscribe-button-large {
-  padding: 0.75rem 1.5rem;
-  background: #667eea;
-  color: white;
+  padding: 12px 32px;
+  background: var(--spotify-white);
+  color: var(--spotify-black);
   border: none;
-  border-radius: 8px;
+  border-radius: 500px;
   cursor: pointer;
-  font-weight: 600;
-  transition: background 0.2s;
+  font-weight: 700;
+  font-size: 14px;
+  transition: transform 0.2s;
 }
 
 .subscribe-button-large:hover {
-  background: #5568d3;
+  transform: scale(1.05);
 }
 
 .subscribe-button-large.subscribed {
-  background: #28a745;
+  background: transparent;
+  color: var(--spotify-white);
+  border: 1px solid var(--spotify-gray);
 }
 
-.back-link {
-  color: #667eea;
-  text-decoration: none;
-  font-weight: 500;
-}
-
-.back-link:hover {
-  text-decoration: underline;
+.subscribe-button-large.subscribed:hover {
+  border-color: var(--spotify-white);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .songs-section {
-  margin-bottom: 3rem;
+  margin-top: 32px;
 }
 
 .songs-section h2 {
-  margin: 0 0 1.5rem 0;
-  color: #333;
-  font-size: 1.8rem;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--spotify-white);
+  margin-bottom: 16px;
 }
 
 .songs-list {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 4px;
 }
 
 .song-item {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 1rem;
-  background: #f8f9fa;
-  border-radius: 8px;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-radius: 4px;
   cursor: pointer;
-  transition: all 0.2s;
-  border: 2px solid transparent;
+  transition: background-color 0.2s;
+  gap: 16px;
 }
 
 .song-item:hover {
-  background: #e9ecef;
-  transform: translateX(4px);
+  background-color: var(--spotify-gray);
 }
 
 .song-item.active {
-  background: #e7f3ff;
-  border-color: #667eea;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.song-info {
+  flex: 1;
+  min-width: 0;
 }
 
 .song-info h3 {
-  margin: 0 0 0.25rem 0;
-  color: #333;
-  font-size: 1.1rem;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--spotify-white);
+  margin: 0 0 4px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .song-info p {
-  margin: 0 0 0.25rem 0;
-  color: #666;
-  font-size: 0.9rem;
+  font-size: 14px;
+  color: var(--spotify-light-gray);
+  margin: 0 0 4px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .song-tracks-info {
-  margin: 0;
-  color: #999;
-  font-size: 0.85rem;
+  font-size: 12px;
+  color: var(--spotify-light-gray);
 }
 
 .song-actions {
   display: flex;
-  gap: 0.5rem;
+  gap: 8px;
+  align-items: center;
 }
 
 .action-button {
-  padding: 0.5rem 1rem;
-  background: white;
-  border: 2px solid #e0e0e0;
-  border-radius: 6px;
+  padding: 8px 12px;
+  background: transparent;
+  color: var(--spotify-light-gray);
+  border: none;
+  border-radius: 500px;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 14px;
+  font-weight: 500;
   transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .action-button:hover {
-  background: #f8f9fa;
-  border-color: #667eea;
+  color: var(--spotify-white);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .action-button.liked {
-  background: #ffe0e0;
-  border-color: #ff6b6b;
-  color: #c33;
+  color: var(--spotify-green);
 }
 
 .action-button.favorited {
-  background: #fff4e0;
-  border-color: #ffa500;
-  color: #d68910;
+  color: var(--spotify-green);
 }
 
 .player-section {
-  margin-top: 3rem;
-  padding-top: 2rem;
-  border-top: 2px solid #e0e0e0;
+  margin-top: 32px;
+  padding: 24px;
+  background: var(--spotify-gray);
+  border-radius: 8px;
 }
 
 .player-section h2 {
-  margin: 0 0 1.5rem 0;
-  color: #333;
-  font-size: 1.5rem;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--spotify-white);
+  margin: 0 0 8px 0;
 }
 
-@media (max-width: 768px) {
-  .album-header {
-    grid-template-columns: 1fr;
-    text-align: center;
-  }
-
-  .album-cover-large {
-    margin: 0 auto;
-  }
+.player-section p {
+  color: var(--spotify-light-gray);
+  margin: 0;
+  font-size: 14px;
 }
-
