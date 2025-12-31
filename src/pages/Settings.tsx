@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
 import ProfileDropdown from '../components/ProfileDropdown'
 import './Settings.css'
@@ -21,6 +22,9 @@ const Settings = () => {
   return (
     <div className="settings-page">
       <div className="settings-header-bar">
+        <Link to="/" className="home-link-top">
+          🏠 Home
+        </Link>
         {user && <ProfileDropdown user={user} />}
       </div>
       <div className="settings-container">

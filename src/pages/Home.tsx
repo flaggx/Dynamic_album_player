@@ -9,6 +9,9 @@ const Home = () => {
   return (
     <div className="app">
       <header className="app-header">
+        <Link to="/" className="home-link">
+          🏠 Home
+        </Link>
         <div className="header-content">
           <div>
             <h1>Dynamic Album Player</h1>

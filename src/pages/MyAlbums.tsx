@@ -25,6 +25,9 @@ const MyAlbums = () => {
   return (
     <div className="my-albums-page">
       <div className="my-albums-header-bar">
+        <Link to="/" className="home-link-top">
+          🏠 Home
+        </Link>
         {user && <ProfileDropdown user={user} />}
       </div>
       <div className="my-albums-container">

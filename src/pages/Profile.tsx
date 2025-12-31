@@ -56,6 +56,9 @@ const Profile = () => {
   return (
     <div className="profile-page">
       <div className="profile-header-bar">
+        <Link to="/" className="home-link-top">
+          🏠 Home
+        </Link>
         {currentUser && <ProfileDropdown user={currentUser} />}
       </div>
       <div className="profile-container">

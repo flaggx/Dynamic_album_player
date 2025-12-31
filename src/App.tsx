@@ -1,7 +1,9 @@
 import React from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Auth0Provider } from '@auth0/auth0-react'
+import { PlayerProvider } from './contexts/PlayerContext'
 import ProtectedRoute from './components/ProtectedRoute'
+import BottomPlayer from './components/BottomPlayer'
 import Home from './pages/Home'
 import Login from './pages/Login'
 import Callback from './pages/Callback'
@@ -205,7 +207,10 @@ function App() {
         useRefreshTokens={true}
         cacheLocation="localstorage"
       >
-        {routes}
+        <PlayerProvider>
+          {routes}
+          <BottomPlayer />
+        </PlayerProvider>
       </Auth0Provider>
     </ErrorBoundary>
   )

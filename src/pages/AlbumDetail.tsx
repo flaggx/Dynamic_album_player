@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
 import { albumStorage, songStorage, subscriptionStorage, likeStorage, favoriteStorage } from '../services/storage'
 import { Album, Song } from '../types'
-import AudioPlayer from '../components/AudioPlayer'
+import { usePlayer } from '../contexts/PlayerContext'
 import ProfileDropdown from '../components/ProfileDropdown'
 import './AlbumDetail.css'
 
@@ -11,6 +11,7 @@ const AlbumDetail = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { user } = useAuth0()
+  const { setCurrentSong } = usePlayer()
   
   const [album, setAlbum] = useState<Album | null>(null)
   const [songs, setSongs] = useState<Song[]>([])
@@ -85,6 +86,9 @@ const AlbumDetail = () => {
   return (
     <div className="album-detail">
       <div className="album-detail-header-bar">
+        <Link to="/" className="home-link-top">
+          🏠 Home
+        </Link>
         {user && <ProfileDropdown user={user} />}
       </div>
       <div className="album-detail-container">
@@ -131,7 +135,10 @@ const AlbumDetail = () => {
                 <div
                   key={song.id}
                   className={`song-item ${selectedSong?.id === song.id ? 'active' : ''}`}
-                  onClick={() => setSelectedSong(song)}
+                  onClick={() => {
+                    setSelectedSong(song)
+                    setCurrentSong(song)
+                  }}
                 >
                   <div className="song-info">
                     <h3>{song.title}</h3>
@@ -169,7 +176,9 @@ const AlbumDetail = () => {
         {selectedSong && (
           <div className="player-section">
             <h2>Now Playing: {selectedSong.title}</h2>
-            <AudioPlayer tracks={selectedSong.tracks} />
+            <p style={{ color: '#666', marginTop: '0.5rem' }}>
+              Use the player at the bottom of the screen to control playback
+            </p>
           </div>
         )}
       </div>

@@ -12,6 +12,29 @@
   width: 100%;
   max-width: 1200px;
   margin-bottom: 3rem;
+  position: relative;
+  padding-top: 3.5rem;
+}
+
+.home-link {
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: white;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1rem;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  transition: background 0.2s;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  z-index: 10;
+}
+
+.home-link:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
 }
 
 .header-content {

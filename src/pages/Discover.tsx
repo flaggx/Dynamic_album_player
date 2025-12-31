@@ -49,6 +49,9 @@ const Discover = () => {
   return (
     <div className="discover">
       <div className="discover-container">
+        <Link to="/" className="home-link-top">
+          🏠 Home
+        </Link>
         <div className="discover-header">
           <h1>Discover Albums</h1>
           <div className="discover-header-right">

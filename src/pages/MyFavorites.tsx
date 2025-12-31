@@ -30,6 +30,9 @@ const MyFavorites = () => {
   return (
     <div className="my-favorites-page">
       <div className="my-favorites-header-bar">
+        <Link to="/" className="home-link-top">
+          🏠 Home
+        </Link>
         {user && <ProfileDropdown user={user} />}
       </div>
       <div className="my-favorites-container">

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
 import { albumStorage, songStorage } from '../services/storage'
 import { Album, Song, Track } from '../types'
@@ -115,6 +115,9 @@ const CreateAlbum = () => {
   return (
     <div className="create-album">
       <div className="create-album-header-bar">
+        <Link to="/" className="home-link-top">
+          🏠 Home
+        </Link>
         {user && <ProfileDropdown user={user} />}
       </div>
       <div className="create-album-container">

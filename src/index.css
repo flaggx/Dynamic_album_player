@@ -24,6 +24,7 @@ body {
   min-width: 320px;
   min-height: 100vh;
   background-color: #242424;
+  padding-bottom: 90px; /* Space for bottom player */
 }
 
 #root {
