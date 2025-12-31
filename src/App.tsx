@@ -5,6 +5,9 @@ import ProtectedRoute from './components/ProtectedRoute'
 import Home from './pages/Home'
 import Login from './pages/Login'
 import Callback from './pages/Callback'
+import Discover from './pages/Discover'
+import CreateAlbum from './pages/CreateAlbum'
+import AlbumDetail from './pages/AlbumDetail'
 
 const domain = import.meta.env.VITE_AUTH0_DOMAIN
 const clientId = import.meta.env.VITE_AUTH0_CLIENT_ID
@@ -83,7 +86,31 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route
+          path="/discover"
+          element={
+            <ProtectedRoute>
+              <Discover />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/create-album"
+          element={
+            <ProtectedRoute>
+              <CreateAlbum />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/album/:id"
+          element={
+            <ProtectedRoute>
+              <AlbumDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={<Navigate to="/discover" replace />} />
       </Routes>
     </BrowserRouter>
   )

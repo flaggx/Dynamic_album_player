@@ -1,0 +1,178 @@
+.discover {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 2rem;
+}
+
+.discover-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.discover-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.discover-header h1 {
+  color: white;
+  font-size: 2.5rem;
+  margin: 0;
+}
+
+.filter-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.filter-buttons button {
+  padding: 0.5rem 1.5rem;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.filter-buttons button:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.filter-buttons button.active {
+  background: white;
+  color: #667eea;
+  border-color: white;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20px;
+  color: #333;
+}
+
+.create-link {
+  display: inline-block;
+  margin-top: 1rem;
+  padding: 0.75rem 2rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: transform 0.2s;
+}
+
+.create-link:hover {
+  transform: translateY(-2px);
+}
+
+.albums-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.album-card {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.album-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+.album-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.album-cover {
+  width: 100%;
+  aspect-ratio: 1;
+  background: #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.album-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.album-placeholder {
+  font-size: 4rem;
+  opacity: 0.5;
+}
+
+.album-info {
+  padding: 1rem;
+}
+
+.album-info h3 {
+  margin: 0 0 0.5rem 0;
+  color: #333;
+  font-size: 1.2rem;
+}
+
+.album-artist {
+  margin: 0 0 0.25rem 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.album-songs {
+  margin: 0;
+  color: #999;
+  font-size: 0.85rem;
+}
+
+.album-actions {
+  padding: 0 1rem 1rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.subscribe-button {
+  padding: 0.5rem 1rem;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+}
+
+.subscribe-button:hover {
+  background: #5568d3;
+}
+
+.subscribe-button.subscribed {
+  background: #28a745;
+}
+
+.album-stats {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.9rem;
+  color: #666;
+}
+

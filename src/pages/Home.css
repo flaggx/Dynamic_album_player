@@ -71,7 +71,52 @@
 
 .app-main {
   width: 100%;
-  max-width: 800px;
+  max-width: 1200px;
+}
+
+.home-content {
+  width: 100%;
+}
+
+.home-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.home-card {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20px;
+  padding: 3rem 2rem;
+  text-decoration: none;
+  color: inherit;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s, box-shadow 0.2s;
+  text-align: center;
+}
+
+.home-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+}
+
+.card-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.home-card h2 {
+  margin: 0 0 0.5rem 0;
+  color: #333;
+  font-size: 1.8rem;
+}
+
+.home-card p {
+  margin: 0;
+  color: #666;
+  font-size: 1rem;
+  line-height: 1.5;
 }
 
 @media (max-width: 768px) {

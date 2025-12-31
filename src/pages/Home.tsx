@@ -1,5 +1,5 @@
+import { Link } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
-import AudioPlayer from '../components/AudioPlayer'
 import './Home.css'
 
 const Home = () => {
@@ -11,7 +11,7 @@ const Home = () => {
         <div className="header-content">
           <div>
             <h1>Dynamic Album Player</h1>
-            <p>Toggle individual tracks to customize your listening experience</p>
+            <p>Create, discover, and play albums with customizable tracks</p>
           </div>
           <div className="user-menu">
             {user?.picture && (
@@ -32,7 +32,20 @@ const Home = () => {
         </div>
       </header>
       <main className="app-main">
-        <AudioPlayer />
+        <div className="home-content">
+          <div className="home-cards">
+            <Link to="/discover" className="home-card">
+              <div className="card-icon">🔍</div>
+              <h2>Discover Albums</h2>
+              <p>Browse and explore albums created by other artists</p>
+            </Link>
+            <Link to="/create-album" className="home-card">
+              <div className="card-icon">➕</div>
+              <h2>Create Album</h2>
+              <p>Upload your music and create interactive albums</p>
+            </Link>
+          </div>
+        </div>
       </main>
     </div>
   )

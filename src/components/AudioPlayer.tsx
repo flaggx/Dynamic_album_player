@@ -32,13 +32,27 @@ const AudioPlayer = ({ tracks: initialTracks }: AudioPlayerProps) => {
   const gainNodesRef = useRef<Map<string, GainNode>>(new Map())
 
   useEffect(() => {
+    // Update tracks when props change
+    if (initialTracks) {
+      setTracks(initialTracks)
+    }
+  }, [initialTracks])
+
+  useEffect(() => {
+    if (tracks.length === 0) return
+    
     // Initialize AudioContext
     const AudioContextClass = window.AudioContext || (window as typeof window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext
-    audioContextRef.current = new AudioContextClass()
+    if (!audioContextRef.current) {
+      audioContextRef.current = new AudioContextClass()
+    }
 
     // Initialize audio elements and audio graph for each track
-    const currentTracks = initialTracks || defaultTracks
+    const currentTracks = tracks
     currentTracks.forEach((track) => {
+      // Skip if already initialized
+      if (audioElementsRef.current.has(track.id)) return
+      
       const audio = new Audio(track.url || '')
       audio.loop = true
       audio.preload = 'auto'
@@ -94,7 +108,7 @@ const AudioPlayer = ({ tracks: initialTracks }: AudioPlayerProps) => {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [tracks])
 
   const toggleTrack = (trackId: string) => {
     setTracks((prevTracks) => {
@@ -183,9 +197,11 @@ const AudioPlayer = ({ tracks: initialTracks }: AudioPlayerProps) => {
         ))}
       </div>
 
-      <div className="info-box">
-        <p>💡 Add audio files to the <code>public/audio/</code> directory and update track URLs in the component.</p>
-      </div>
+      {tracks.length === 0 && (
+        <div className="info-box">
+          <p>💡 No tracks available. Select a song to play.</p>
+        </div>
+      )}
     </div>
   )
 }
