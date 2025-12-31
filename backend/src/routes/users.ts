@@ -1,34 +1,45 @@
 import express from 'express'
 import { db } from '../database/init.js'
 import { promisify } from 'util'
+import { authenticate, optionalAuth, getUserId, AuthRequest } from '../middleware/auth.js'
+import { CustomError } from '../middleware/errorHandler'
 
 const router = express.Router()
 const dbGet = promisify(db.get.bind(db))
 const dbRun = promisify(db.run.bind(db))
 
 // Get user by ID
-router.get('/:id', async (req, res) => {
+router.get('/:id', optionalAuth, async (req, res, next) => {
   try {
     const user = await dbGet('SELECT * FROM users WHERE id = ?', [req.params.id])
     
     if (!user) {
-      return res.status(404).json({ error: 'User not found' })
+      throw new CustomError('User not found', 404)
     }
 
     res.json(user)
   } catch (error) {
-    console.error('Error fetching user:', error)
-    res.status(500).json({ error: 'Failed to fetch user' })
+    next(error)
   }
 })
 
-// Create or update user
-router.post('/', async (req, res) => {
+// Create or update user (requires authentication, can only update own profile)
+router.post('/', authenticate, async (req: AuthRequest, res, next) => {
   try {
+    const userId = getUserId(req)
+    if (!userId) {
+      throw new CustomError('Unauthorized', 401)
+    }
+
     const { id, email, name, picture, bio } = req.body
 
     if (!id || !email) {
-      return res.status(400).json({ error: 'Missing required fields' })
+      throw new CustomError('Missing required fields', 400)
+    }
+
+    // Verify user can only update their own profile
+    if (id !== userId) {
+      throw new CustomError('Forbidden: You can only update your own profile', 403)
     }
 
     // Check if user exists
@@ -58,8 +69,7 @@ router.post('/', async (req, res) => {
       res.status(201).json(user)
     }
   } catch (error) {
-    console.error('Error creating/updating user:', error)
-    res.status(500).json({ error: 'Failed to create/update user' })
+    next(error)
   }
 })
 

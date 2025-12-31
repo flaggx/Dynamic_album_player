@@ -2,6 +2,8 @@ import express from 'express'
 import { db } from '../database/init.js'
 import { v4 as uuidv4 } from 'uuid'
 import { promisify } from 'util'
+import { authenticate, optionalAuth, getUserId, AuthRequest } from '../middleware/auth.js'
+import { CustomError } from '../middleware/errorHandler'
 
 const router = express.Router()
 const dbRun = promisify(db.run.bind(db))
@@ -9,7 +11,7 @@ const dbGet = promisify(db.get.bind(db))
 const dbAll = promisify(db.all.bind(db))
 
 // Get like count for song
-router.get('/song/:songId/count', async (req, res) => {
+router.get('/song/:songId/count', optionalAuth, async (req, res, next) => {
   try {
     const result = await dbGet(
       'SELECT COUNT(*) as count FROM likes WHERE song_id = ?',
@@ -19,13 +21,12 @@ router.get('/song/:songId/count', async (req, res) => {
     const count = result?.count ? Number(result.count) : 0
     res.json({ count })
   } catch (error) {
-    console.error('Error fetching like count:', error)
-    res.status(500).json({ error: 'Failed to fetch like count' })
+    next(error)
   }
 })
 
 // Check if user liked song
-router.get('/check/:userId/:songId', async (req, res) => {
+router.get('/check/:userId/:songId', optionalAuth, async (req, res, next) => {
   try {
     const like = await dbGet(
       'SELECT * FROM likes WHERE user_id = ? AND song_id = ?',
@@ -33,19 +34,25 @@ router.get('/check/:userId/:songId', async (req, res) => {
     )
     res.json({ isLiked: !!like })
   } catch (error) {
-    console.error('Error checking like:', error)
-    res.status(500).json({ error: 'Failed to check like' })
+    next(error)
   }
 })
 
-// Toggle like
-router.post('/toggle', async (req, res) => {
+// Toggle like (requires authentication)
+router.post('/toggle', authenticate, async (req: AuthRequest, res, next) => {
   try {
-    const { userId, songId } = req.body
-
-    if (!userId || !songId) {
-      return res.status(400).json({ error: 'Missing required fields' })
+    const userId = getUserId(req)
+    if (!userId) {
+      throw new CustomError('Unauthorized', 401)
     }
+
+    const { songId } = req.body
+
+    if (!songId) {
+      throw new CustomError('Missing required fields', 400)
+    }
+
+    // Use authenticated user's ID
 
     // Check if already liked
     const existing = await dbGet(
@@ -71,8 +78,7 @@ router.post('/toggle', async (req, res) => {
       res.json({ isLiked: true })
     }
   } catch (error) {
-    console.error('Error toggling like:', error)
-    res.status(500).json({ error: 'Failed to toggle like' })
+    next(error)
   }
 })
 

@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
+import toast from 'react-hot-toast'
 import { albumsApi, songsApi, subscriptionsApi, likesApi, favoritesApi } from '../services/api'
 import { Album, Song } from '../types'
 import { usePlayer } from '../contexts/PlayerContext'
 import Sidebar from '../components/Sidebar'
 import TopBar from '../components/TopBar'
+import LoadingSpinner from '../components/LoadingSpinner'
 import './AlbumDetail.css'
 
 // Like button component
@@ -92,11 +94,13 @@ const AlbumDetail = () => {
   const [songs, setSongs] = useState<Song[]>([])
   const [selectedSong, setSelectedSong] = useState<Song | null>(null)
   const [isSubscribed, setIsSubscribed] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     if (!id) return
     
     const loadAlbum = async () => {
+      setIsLoading(true)
       try {
         const loadedAlbum = await albumsApi.getById(id)
         setAlbum(loadedAlbum)
@@ -111,7 +115,10 @@ const AlbumDetail = () => {
         }
       } catch (error) {
         console.error('Error loading album:', error)
+        toast.error('Failed to load album')
         navigate('/discover')
+      } finally {
+        setIsLoading(false)
       }
     }
     
@@ -123,11 +130,13 @@ const AlbumDetail = () => {
     try {
       await subscriptionsApi.subscribe(user.sub, album.artistId)
       setIsSubscribed(true)
+      toast.success('Subscribed!')
       if (album) {
         setAlbum({ ...album, subscribers: album.subscribers + 1 })
       }
     } catch (error) {
       console.error('Error subscribing:', error)
+      toast.error('Failed to subscribe')
     }
   }
 
@@ -136,11 +145,13 @@ const AlbumDetail = () => {
     try {
       await subscriptionsApi.unsubscribe(user.sub, album.artistId)
       setIsSubscribed(false)
+      toast.success('Unsubscribed')
       if (album) {
         setAlbum({ ...album, subscribers: Math.max(0, album.subscribers - 1) })
       }
     } catch (error) {
       console.error('Error unsubscribing:', error)
+      toast.error('Failed to unsubscribe')
     }
   }
 
@@ -151,6 +162,7 @@ const AlbumDetail = () => {
       loadSongs()
     } catch (error) {
       console.error('Error toggling like:', error)
+      toast.error('Failed to toggle like')
     }
   }
 
@@ -161,6 +173,7 @@ const AlbumDetail = () => {
       loadSongs()
     } catch (error) {
       console.error('Error toggling favorite:', error)
+      toast.error('Failed to toggle favorite')
     }
   }
 
@@ -189,8 +202,18 @@ const AlbumDetail = () => {
     checkSubscription()
   }, [user, album])
 
-  if (!album) {
-    return <div>Loading...</div>
+  if (isLoading || !album) {
+    return (
+      <div className="spotify-app">
+        <Sidebar />
+        <div className="main-content">
+          <TopBar />
+          <div className="content-area">
+            <LoadingSpinner fullScreen />
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (

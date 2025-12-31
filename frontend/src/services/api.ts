@@ -2,14 +2,31 @@ import { Album, Song, Track, Subscription, Like, Favorite, User } from '../types
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
+// Helper to get auth token (will be set by auth context)
+let getAccessToken: (() => Promise<string | undefined>) | null = null
+
+export const setAuthTokenGetter = (getter: () => Promise<string | undefined>) => {
+  getAccessToken = getter
+}
+
 // Helper function for API calls
 async function apiCall<T>(endpoint: string, options?: RequestInit): Promise<T> {
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+    ...options?.headers,
+  }
+
+  // Add auth token if available
+  if (getAccessToken) {
+    const token = await getAccessToken()
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+  }
+
   const response = await fetch(`${API_URL}${endpoint}`, {
     ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
+    headers,
   })
 
   if (!response.ok) {
@@ -22,8 +39,9 @@ async function apiCall<T>(endpoint: string, options?: RequestInit): Promise<T> {
 
 // Albums API
 export const albumsApi = {
-  getAll: async (): Promise<Album[]> => {
-    const albums = await apiCall<Array<any>>('/api/albums')
+  getAll: async (search?: string): Promise<Album[]> => {
+    const url = search ? `/api/albums?search=${encodeURIComponent(search)}` : '/api/albums'
+    const albums = await apiCall<Array<any>>(url)
     return albums.map(album => ({
       ...album,
       songs: album.songs || [],
@@ -52,17 +70,36 @@ export const albumsApi = {
     }))
   },
 
-  create: async (album: Omit<Album, 'id' | 'createdAt' | 'updatedAt'>): Promise<Album> => {
-    const created = await apiCall<any>('/api/albums', {
+  create: async (album: Omit<Album, 'id' | 'createdAt' | 'updatedAt'> & { coverImageFile?: File }): Promise<Album> => {
+    const formData = new FormData()
+    formData.append('title', album.title)
+    formData.append('artist', album.artist)
+    if (album.description) formData.append('description', album.description)
+    if (album.coverImageFile) {
+      formData.append('coverImage', album.coverImageFile)
+    }
+
+    const headers: HeadersInit = {}
+    // Add auth token if available
+    if (getAccessToken) {
+      const token = await getAccessToken()
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+    }
+
+    const response = await fetch(`${API_URL}/api/albums`, {
       method: 'POST',
-      body: JSON.stringify({
-        title: album.title,
-        artist: album.artist,
-        artistId: album.artistId,
-        description: album.description,
-        coverImage: album.coverImage,
-      }),
+      headers,
+      body: formData,
     })
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Unknown error' }))
+      throw new Error(error.error || `HTTP error! status: ${response.status}`)
+    }
+
+    const created = await response.json()
     return {
       ...created,
       songs: [],
@@ -222,7 +259,7 @@ export const subscriptionsApi = {
   subscribe: async (userId: string, artistId: string): Promise<Subscription> => {
     const subscription = await apiCall<any>('/api/subscriptions', {
       method: 'POST',
-      body: JSON.stringify({ userId, artistId }),
+      body: JSON.stringify({ artistId }), // userId comes from token
     })
     return {
       ...subscription,
@@ -232,6 +269,11 @@ export const subscriptionsApi = {
 
   unsubscribe: async (userId: string, artistId: string): Promise<void> => {
     await apiCall(`/api/subscriptions/${userId}/${artistId}`, { method: 'DELETE' })
+  },
+
+  getSubscriberCount: async (artistId: string): Promise<number> => {
+    const result = await apiCall<{ count: number }>(`/api/subscriptions/artist/${artistId}/count`)
+    return result.count
   },
 }
 
@@ -250,7 +292,7 @@ export const likesApi = {
   toggle: async (userId: string, songId: string): Promise<boolean> => {
     const result = await apiCall<{ isLiked: boolean }>('/api/likes/toggle', {
       method: 'POST',
-      body: JSON.stringify({ userId, songId }),
+      body: JSON.stringify({ songId }), // userId comes from token
     })
     return result.isLiked
   },
@@ -279,7 +321,7 @@ export const favoritesApi = {
   toggle: async (userId: string, songId: string): Promise<boolean> => {
     const result = await apiCall<{ isFavorited: boolean }>('/api/favorites/toggle', {
       method: 'POST',
-      body: JSON.stringify({ userId, songId }),
+      body: JSON.stringify({ songId }), // userId comes from token
     })
     return result.isFavorited
   },

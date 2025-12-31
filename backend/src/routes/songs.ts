@@ -2,9 +2,12 @@ import express from 'express'
 import multer from 'multer'
 import path from 'path'
 import fs from 'fs'
+import { parseFile } from 'music-metadata'
 import { db } from '../database/init'
 import { v4 as uuidv4 } from 'uuid'
 import { promisify } from 'util'
+import { authenticate, optionalAuth, getUserId, AuthRequest } from '../middleware/auth.js'
+import { CustomError } from '../middleware/errorHandler'
 
 const router = express.Router()
 const dbRun = promisify(db.run.bind(db))
@@ -34,17 +37,33 @@ const upload = multer({
   },
   fileFilter: (req, file, cb) => {
     const allowedTypes = /audio\/(mp3|wav|ogg|m4a|aac|flac)/
-    // Allow audio files or files with audio extensions (for testing)
-    if (allowedTypes.test(file.mimetype) || /\.(mp3|wav|ogg|m4a|aac|flac)$/i.test(file.originalname)) {
-      cb(null, true)
-    } else {
-      cb(new Error('Invalid file type. Only audio files are allowed.'))
+    const allowedExtensions = /\.(mp3|wav|ogg|m4a|aac|flac)$/i
+    
+    // Check MIME type and extension
+    if (!allowedTypes.test(file.mimetype) && !allowedExtensions.test(file.originalname)) {
+      return cb(new Error('Invalid file type. Only audio files (mp3, wav, ogg, m4a, aac, flac) are allowed.'))
     }
+    
+    cb(null, true)
   }
 })
 
-// Get all songs
-router.get('/', async (req, res) => {
+// Helper function to validate audio file
+async function validateAudioFile(filePath: string): Promise<{ valid: boolean; duration?: number; error?: string }> {
+  try {
+    const metadata = await parseFile(filePath)
+    // Check if it's actually an audio file
+    if (!metadata.format.container || !metadata.format.codec) {
+      return { valid: false, error: 'File is not a valid audio file' }
+    }
+    return { valid: true, duration: metadata.format.duration }
+  } catch (error) {
+    return { valid: false, error: 'Failed to parse audio file' }
+  }
+}
+
+// Get all songs (public)
+router.get('/', optionalAuth, async (req, res, next) => {
   try {
     const songs = await dbAll(`
       SELECT 
@@ -60,29 +79,27 @@ router.get('/', async (req, res) => {
 
     res.json(songs)
   } catch (error) {
-    console.error('Error fetching songs:', error)
-    res.status(500).json({ error: 'Failed to fetch songs' })
+    next(error)
   }
 })
 
 // Get songs by album (must come before /:id to avoid route conflicts)
-router.get('/album/:albumId', async (req, res) => {
+router.get('/album/:albumId', optionalAuth, async (req, res, next) => {
   try {
     const songs = await dbAll('SELECT * FROM songs WHERE album_id = ? ORDER BY created_at ASC', [req.params.albumId])
     res.json(songs)
   } catch (error) {
-    console.error('Error fetching album songs:', error)
-    res.status(500).json({ error: 'Failed to fetch album songs' })
+    next(error)
   }
 })
 
 // Get song by ID
-router.get('/:id', async (req, res) => {
+router.get('/:id', optionalAuth, async (req, res, next) => {
   try {
     const song = await dbGet('SELECT * FROM songs WHERE id = ?', [req.params.id])
     
     if (!song) {
-      return res.status(404).json({ error: 'Song not found' })
+      throw new CustomError('Song not found', 404)
     }
 
     // Get tracks for this song
@@ -90,19 +107,32 @@ router.get('/:id', async (req, res) => {
     
     res.json({ ...song, tracks })
   } catch (error) {
-    console.error('Error fetching song:', error)
-    res.status(500).json({ error: 'Failed to fetch song' })
+    next(error)
   }
 })
 
-// Create song with tracks
-router.post('/', upload.array('tracks'), async (req, res) => {
+// Create song with tracks (requires authentication)
+router.post('/', authenticate, upload.array('tracks'), async (req: AuthRequest, res, next) => {
   try {
+    const userId = getUserId(req)
+    if (!userId) {
+      throw new CustomError('Unauthorized', 401)
+    }
+
     const { title, artist, albumId } = req.body
     const files = req.files as Express.Multer.File[]
 
     if (!title || !albumId || !files || files.length === 0) {
-      return res.status(400).json({ error: 'Missing required fields' })
+      throw new CustomError('Missing required fields', 400)
+    }
+
+    // Verify user owns the album
+    const album = await dbGet('SELECT * FROM albums WHERE id = ?', [albumId])
+    if (!album) {
+      throw new CustomError('Album not found', 404)
+    }
+    if (album.artist_id !== userId) {
+      throw new CustomError('Forbidden: You can only add songs to your own albums', 403)
     }
 
     const songId = uuidv4()
@@ -119,7 +149,23 @@ router.post('/', upload.array('tracks'), async (req, res) => {
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
       const trackName = trackNames[i] || `Track ${i + 1}`
+      const filePath = path.join(uploadDir, file.filename)
+      
+      // Validate audio file
+      const validation = await validateAudioFile(filePath)
+      if (!validation.valid) {
+        // Delete invalid file
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath)
+        }
+        throw new CustomError(
+          `Invalid audio file "${file.originalname}": ${validation.error || 'File is not a valid audio file'}`,
+          400
+        )
+      }
+
       const trackId = uuidv4()
+      const duration = validation.duration || null
       
       await dbRun(
         `INSERT INTO tracks (id, song_id, name, file_path, enabled)
@@ -135,17 +181,50 @@ router.post('/', upload.array('tracks'), async (req, res) => {
       })
     }
 
+    // Update song duration if we have track durations
+    const durations: number[] = []
+    for (const file of files) {
+      const filePath = path.join(uploadDir, file.filename)
+      try {
+        const metadata = await parseFile(filePath)
+        if (metadata.format.duration) {
+          durations.push(metadata.format.duration)
+        }
+      } catch (error) {
+        // Skip if we can't get duration
+      }
+    }
+    if (durations.length > 0) {
+      const maxDuration = Math.max(...durations)
+      await dbRun('UPDATE songs SET duration = ? WHERE id = ?', [maxDuration, songId])
+    }
+
     const song = await dbGet('SELECT * FROM songs WHERE id = ?', [songId])
     res.status(201).json({ ...song, tracks })
   } catch (error) {
-    console.error('Error creating song:', error)
-    res.status(500).json({ error: 'Failed to create song' })
+    next(error)
   }
 })
 
-// Update song
-router.put('/:id', async (req, res) => {
+// Update song (requires authentication and ownership)
+router.put('/:id', authenticate, async (req: AuthRequest, res, next) => {
   try {
+    const userId = getUserId(req)
+    if (!userId) {
+      throw new CustomError('Unauthorized', 401)
+    }
+
+    // Check if song exists and user owns the album
+    const song = await dbGet('SELECT * FROM songs WHERE id = ?', [req.params.id])
+    if (!song) {
+      throw new CustomError('Song not found', 404)
+    }
+
+    const album = await dbGet('SELECT * FROM albums WHERE id = ?', [song.album_id])
+    if (!album || album.artist_id !== userId) {
+      throw new CustomError('Forbidden: You can only edit songs in your own albums', 403)
+    }
+
     const { title, artist, duration, coverImage } = req.body
 
     await dbRun(
@@ -158,17 +237,32 @@ router.put('/:id', async (req, res) => {
       [title, artist, duration, coverImage, req.params.id]
     )
 
-    const song = await dbGet('SELECT * FROM songs WHERE id = ?', [req.params.id])
-    res.json(song)
+    const updated = await dbGet('SELECT * FROM songs WHERE id = ?', [req.params.id])
+    res.json(updated)
   } catch (error) {
-    console.error('Error updating song:', error)
-    res.status(500).json({ error: 'Failed to update song' })
+    next(error)
   }
 })
 
-// Delete song
-router.delete('/:id', async (req, res) => {
+// Delete song (requires authentication and ownership)
+router.delete('/:id', authenticate, async (req: AuthRequest, res, next) => {
   try {
+    const userId = getUserId(req)
+    if (!userId) {
+      throw new CustomError('Unauthorized', 401)
+    }
+
+    // Check if song exists and user owns the album
+    const song = await dbGet('SELECT * FROM songs WHERE id = ?', [req.params.id])
+    if (!song) {
+      throw new CustomError('Song not found', 404)
+    }
+
+    const album = await dbGet('SELECT * FROM albums WHERE id = ?', [song.album_id])
+    if (!album || album.artist_id !== userId) {
+      throw new CustomError('Forbidden: You can only delete songs from your own albums', 403)
+    }
+
     // Get track file paths before deleting
     const tracks = await dbAll('SELECT file_path FROM tracks WHERE song_id = ?', [req.params.id])
     
@@ -183,8 +277,7 @@ router.delete('/:id', async (req, res) => {
     await dbRun('DELETE FROM songs WHERE id = ?', [req.params.id])
     res.status(204).send()
   } catch (error) {
-    console.error('Error deleting song:', error)
-    res.status(500).json({ error: 'Failed to delete song' })
+    next(error)
   }
 })
 

@@ -1,12 +1,36 @@
 version: '3.8'
 
 services:
-  dynamic-album-player:
+  frontend:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ./frontend
+      dockerfile: ../Dockerfile
     ports:
       - "8080:80"
     restart: unless-stopped
-    container_name: dynamic-album-player
+    container_name: dynamic-album-player-frontend
+    depends_on:
+      - backend
+    environment:
+      - VITE_API_URL=http://backend:3001
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    restart: unless-stopped
+    container_name: dynamic-album-player-backend
+    volumes:
+      - ./backend/data:/app/data
+      - ./backend/uploads:/app/uploads
+    environment:
+      - PORT=3001
+      - NODE_ENV=production
+      - DATABASE_PATH=/app/data/database.sqlite
+      - UPLOAD_DIR=/app/uploads
+      - CORS_ORIGIN=http://localhost:8080
+    env_file:
+      - ./backend/.env
 

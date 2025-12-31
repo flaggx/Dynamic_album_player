@@ -26,3 +26,7 @@ dist-ssr
 *.sln
 *.sw?
 
+# Documentation files (generated/analysis)
+IMPLEMENTATION_STATUS.md
+MVP_GAP_ANALYSIS.md
+

@@ -2,6 +2,8 @@ import express from 'express'
 import { db } from '../database/init.js'
 import { v4 as uuidv4 } from 'uuid'
 import { promisify } from 'util'
+import { authenticate, optionalAuth, getUserId, AuthRequest } from '../middleware/auth.js'
+import { CustomError } from '../middleware/errorHandler'
 
 const router = express.Router()
 const dbRun = promisify(db.run.bind(db))
@@ -9,21 +11,25 @@ const dbGet = promisify(db.get.bind(db))
 const dbAll = promisify(db.all.bind(db))
 
 // Get user subscriptions
-router.get('/user/:userId', async (req, res) => {
+router.get('/user/:userId', authenticate, async (req: AuthRequest, res, next) => {
   try {
+    const userId = getUserId(req)
+    if (!userId || userId !== req.params.userId) {
+      throw new CustomError('Unauthorized', 401)
+    }
+
     const subscriptions = await dbAll(
       'SELECT * FROM subscriptions WHERE user_id = ?',
       [req.params.userId]
     )
     res.json(subscriptions)
   } catch (error) {
-    console.error('Error fetching subscriptions:', error)
-    res.status(500).json({ error: 'Failed to fetch subscriptions' })
+    next(error)
   }
 })
 
 // Check if user is subscribed
-router.get('/check/:userId/:artistId', async (req, res) => {
+router.get('/check/:userId/:artistId', optionalAuth, async (req, res, next) => {
   try {
     const subscription = await dbGet(
       'SELECT * FROM subscriptions WHERE user_id = ? AND artist_id = ?',
@@ -31,19 +37,29 @@ router.get('/check/:userId/:artistId', async (req, res) => {
     )
     res.json({ isSubscribed: !!subscription })
   } catch (error) {
-    console.error('Error checking subscription:', error)
-    res.status(500).json({ error: 'Failed to check subscription' })
+    next(error)
   }
 })
 
-// Subscribe to artist
-router.post('/', async (req, res) => {
+// Subscribe to artist (requires authentication)
+router.post('/', authenticate, async (req: AuthRequest, res, next) => {
   try {
-    const { userId, artistId } = req.body
-
-    if (!userId || !artistId) {
-      return res.status(400).json({ error: 'Missing required fields' })
+    const userId = getUserId(req)
+    if (!userId) {
+      throw new CustomError('Unauthorized', 401)
     }
+
+    const { artistId } = req.body
+
+    if (!artistId) {
+      throw new CustomError('Missing required fields', 400)
+    }
+
+    if (userId === artistId) {
+      throw new CustomError('Cannot subscribe to yourself', 400)
+    }
+
+    // Use authenticated user's ID
 
     // Check if already subscribed
     const existing = await dbGet(
@@ -65,22 +81,41 @@ router.post('/', async (req, res) => {
     const subscription = await dbGet('SELECT * FROM subscriptions WHERE id = ?', [subscriptionId])
     res.status(201).json(subscription)
   } catch (error) {
-    console.error('Error creating subscription:', error)
-    res.status(500).json({ error: 'Failed to create subscription' })
+    next(error)
   }
 })
 
-// Unsubscribe from artist
-router.delete('/:userId/:artistId', async (req, res) => {
+// Unsubscribe from artist (requires authentication)
+router.delete('/:artistId', authenticate, async (req: AuthRequest, res, next) => {
   try {
+    const userId = getUserId(req)
+    if (!userId) {
+      throw new CustomError('Unauthorized', 401)
+    }
+
+    const artistId = req.params.artistId
+
     await dbRun(
       'DELETE FROM subscriptions WHERE user_id = ? AND artist_id = ?',
-      [req.params.userId, req.params.artistId]
+      [userId, artistId]
     )
     res.status(204).send()
   } catch (error) {
-    console.error('Error deleting subscription:', error)
-    res.status(500).json({ error: 'Failed to delete subscription' })
+    next(error)
+  }
+})
+
+// Get subscriber count for artist
+router.get('/artist/:artistId/count', optionalAuth, async (req, res, next) => {
+  try {
+    const result = await dbGet(
+      'SELECT COUNT(*) as count FROM subscriptions WHERE artist_id = ?',
+      [req.params.artistId]
+    )
+    const count = result?.count ? Number(result.count) : 0
+    res.json({ count })
+  } catch (error) {
+    next(error)
   }
 })
 

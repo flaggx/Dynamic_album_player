@@ -9,6 +9,7 @@ import subscriptionRoutes from './routes/subscriptions'
 import likeRoutes from './routes/likes'
 import favoriteRoutes from './routes/favorites'
 import { initDatabase } from './database/init'
+import { errorHandler } from './middleware/errorHandler'
 
 dotenv.config()
 
@@ -56,6 +57,9 @@ app.get('/', (req, res) => {
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Dynamic Album Player API' })
 })
+
+// Error handling middleware (must be last)
+app.use(errorHandler)
 
 // Initialize database and start server
 initDatabase().then(() => {

@@ -1,6 +1,7 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { Auth0Provider } from '@auth0/auth0-react'
+import { Auth0Provider, useAuth0 } from '@auth0/auth0-react'
+import { Toaster } from 'react-hot-toast'
 import { PlayerProvider } from './contexts/PlayerContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import BottomPlayer from './components/BottomPlayer'
@@ -9,11 +10,13 @@ import Login from './pages/Login'
 import Callback from './pages/Callback'
 import Discover from './pages/Discover'
 import CreateAlbum from './pages/CreateAlbum'
+import EditAlbum from './pages/EditAlbum'
 import AlbumDetail from './pages/AlbumDetail'
 import Profile from './pages/Profile'
 import Settings from './pages/Settings'
 import MyAlbums from './pages/MyAlbums'
 import MyFavorites from './pages/MyFavorites'
+import { setAuthTokenGetter } from './services/api'
 
 const domain = import.meta.env.VITE_AUTH0_DOMAIN
 const clientId = import.meta.env.VITE_AUTH0_CLIENT_ID
@@ -105,6 +108,14 @@ function App() {
           element={
             <ProtectedRoute>
               <CreateAlbum />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/edit-album/:id"
+          element={
+            <ProtectedRoute>
+              <EditAlbum />
             </ProtectedRoute>
           }
         />
@@ -209,13 +220,26 @@ function App() {
         useRefreshTokens={true}
         cacheLocation="localstorage"
       >
-        <PlayerProvider>
-          {routes}
-          <BottomPlayer />
-        </PlayerProvider>
+        <AuthSetup>
+          <PlayerProvider>
+            {routes}
+            <BottomPlayer />
+          </PlayerProvider>
+        </AuthSetup>
       </Auth0Provider>
     </ErrorBoundary>
   )
+}
+
+// Component to set up auth token getter
+const AuthSetup = ({ children }: { children: React.ReactNode }) => {
+  const { getAccessTokenSilently } = useAuth0()
+
+  useEffect(() => {
+    setAuthTokenGetter(() => getAccessTokenSilently())
+  }, [getAccessTokenSilently])
+
+  return <>{children}</>
 }
 
 export default App
