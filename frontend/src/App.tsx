@@ -161,7 +161,7 @@ function App() {
     </BrowserRouter>
   )
 
-  if (!domain || !clientId) {
+  if (!domain || !clientId || domain === 'your-auth0-domain.auth0.com' || clientId === 'your-client-id') {
     console.log('Auth0 not configured, showing config message')
     return (
       <ErrorBoundary>
@@ -177,16 +177,18 @@ function App() {
           background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
           color: 'white'
         }}>
-          <h2>Auth0 Configuration Missing</h2>
-          <p>Please set VITE_AUTH0_DOMAIN and VITE_AUTH0_CLIENT_ID in your .env file</p>
-          <p>See .env.example for reference</p>
-          <div style={{ marginTop: '2rem', padding: '1rem', background: 'rgba(255,255,255,0.2)', borderRadius: '8px' }}>
+          <h2>Auth0 Configuration Required</h2>
+          <p>Please set VITE_AUTH0_DOMAIN and VITE_AUTH0_CLIENT_ID in <code>frontend/.env</code></p>
+          <p>See <code>frontend/.env.example</code> for reference</p>
+          <div style={{ marginTop: '2rem', padding: '1rem', background: 'rgba(255,255,255,0.2)', borderRadius: '8px', maxWidth: '600px' }}>
             <p><strong>Quick setup:</strong></p>
-            <code style={{ display: 'block', marginTop: '0.5rem', background: 'rgba(0,0,0,0.2)', padding: '0.5rem', borderRadius: '4px' }}>
-              cp .env.example .env
-            </code>
+            <ol style={{ textAlign: 'left', marginTop: '1rem' }}>
+              <li>Get your Auth0 credentials from <a href="https://manage.auth0.com" target="_blank" rel="noopener noreferrer" style={{ color: 'white', textDecoration: 'underline' }}>Auth0 Dashboard</a></li>
+              <li>Edit <code>frontend/.env</code> with your actual values</li>
+              <li>Restart the dev server</li>
+            </ol>
             <p style={{ marginTop: '1rem', fontSize: '0.9rem' }}>
-              Then edit .env with your Auth0 credentials
+              Current values: Domain={domain || 'not set'}, ClientID={clientId ? 'set' : 'not set'}
             </p>
           </div>
         </div>

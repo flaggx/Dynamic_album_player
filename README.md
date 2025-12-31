@@ -13,11 +13,22 @@ A web application that allows creators to release an album where users can selec
 
 ## Tech Stack
 
-- **Frontend**: React 18 + TypeScript
-- **Build Tool**: Vite
+- **Frontend**: React 18 + TypeScript + Vite
+- **Backend**: Node.js + Express + TypeScript
+- **Database**: SQLite
 - **Authentication**: Auth0
 - **Audio**: Web Audio API
 - **Deployment**: Docker + Nginx
+
+## Project Structure
+
+```
+Dynamic_album_player/
+├── frontend/          # React + TypeScript frontend
+├── backend/           # Backend API (coming soon)
+├── docker-compose.yml # Docker Compose configuration
+└── Dockerfile         # Frontend Docker configuration
+```
 
 ## Development
 
@@ -25,19 +36,24 @@ A web application that allows creators to release an album where users can selec
 
 - Node.js 20+ and npm
 
-### Setup
+### Frontend Setup
 
-1. Install dependencies:
+1. Navigate to frontend directory:
+```bash
+cd frontend
+```
+
+2. Install dependencies:
 ```bash
 npm install
 ```
 
-2. Set up Auth0:
+3. Set up Auth0:
    - Create an account at [Auth0](https://auth0.com) (free tier available)
    - Create a new Application (Single Page Application)
    - Go to Settings and copy your Domain and Client ID
    - Add `http://localhost:3000` to Allowed Callback URLs, Allowed Logout URLs, and Allowed Web Origins
-   - Create a `.env` file in the root directory:
+   - Create a `.env` file in the frontend directory:
    ```bash
    cp .env.example .env
    ```
@@ -45,28 +61,62 @@ npm install
    ```
    VITE_AUTH0_DOMAIN=your-domain.auth0.com
    VITE_AUTH0_CLIENT_ID=your-client-id
+   VITE_API_URL=http://localhost:3001
    ```
 
-3. Start development server:
+4. Start development server:
 ```bash
 npm run dev
 ```
 
 The app will be available at `http://localhost:3000`
 
+### Backend Setup
+
+1. Navigate to backend directory:
+```bash
+cd backend
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Create `.env` file:
+```bash
+cp .env.example .env
+```
+
+4. Update `.env` with your configuration (defaults should work for development):
+```
+PORT=3001
+CORS_ORIGIN=http://localhost:3000
+```
+
+5. Start development server:
+```bash
+npm run dev
+```
+
+The API will be available at `http://localhost:3001`
+
+### Running Both
+
+In separate terminals:
+```bash
+# Terminal 1 - Backend
+cd backend && npm run dev
+
+# Terminal 2 - Frontend
+cd frontend && npm run dev
+```
+
 ### Adding Audio Tracks
 
-1. Create a `public/audio/` directory
+1. Create a `frontend/public/audio/` directory
 2. Add your audio files (e.g., `vocals.mp3`, `drums.mp3`, etc.)
-3. Update the track URLs in `src/components/AudioPlayer.tsx`:
-
-```typescript
-const defaultTracks: Track[] = [
-  { id: 'vocals', name: 'Vocals', url: '/audio/vocals.mp3', enabled: true },
-  { id: 'drums', name: 'Drums', url: '/audio/drums.mp3', enabled: true },
-  // ... more tracks
-]
-```
+3. Upload tracks through the Create Album page in the app
 
 ## Docker Deployment
 
@@ -106,37 +156,36 @@ docker rm dynamic-album-player
 
 ## Production Build
 
-Build for production:
+Build frontend for production:
 ```bash
+cd frontend
 npm run build
 ```
 
-The production build will be in the `dist/` directory.
+The production build will be in the `frontend/dist/` directory.
 
 ## Project Structure
 
 ```
 Dynamic_album_player/
-├── src/
-│   ├── components/
-│   │   ├── AudioPlayer.tsx      # Main audio player component
-│   │   ├── AudioPlayer.css
-│   │   └── ProtectedRoute.tsx   # Auth-protected route wrapper
-│   ├── pages/
-│   │   ├── Home.tsx             # Main app page (protected)
-│   │   ├── Home.css
-│   │   ├── Login.tsx             # Auth0 login page
-│   │   ├── Callback.tsx          # Auth0 callback handler
-│   │   └── Auth.css              # Auth page styles
-│   ├── App.tsx                  # Main app component with routing
-│   ├── main.tsx                 # Entry point
-│   └── index.css               # Global styles
-├── public/                      # Static assets (add audio files here)
-├── .env.example                 # Environment variables template
-├── Dockerfile                   # Docker build configuration
+├── frontend/
+│   ├── src/
+│   │   ├── components/          # React components
+│   │   ├── pages/               # Page components
+│   │   ├── contexts/            # React contexts
+│   │   ├── services/            # Frontend services
+│   │   ├── types/               # TypeScript types
+│   │   ├── App.tsx              # Main app component
+│   │   └── main.tsx             # Entry point
+│   ├── public/                  # Static assets
+│   ├── package.json             # Frontend dependencies
+│   ├── vite.config.ts           # Vite configuration
+│   ├── tsconfig.json            # TypeScript configuration
+│   └── nginx.conf               # Nginx configuration
+├── backend/                     # Backend API (coming soon)
+├── Dockerfile                   # Frontend Docker build
 ├── docker-compose.yml           # Docker Compose configuration
-├── nginx.conf                   # Nginx server configuration
-└── package.json
+└── README.md                    # This file
 ```
 
 ## License

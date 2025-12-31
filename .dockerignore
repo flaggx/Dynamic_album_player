@@ -8,4 +8,7 @@ dist
 .DS_Store
 README.md
 docker-compose.yml
+backend/
+frontend/node_modules
+frontend/dist
 
