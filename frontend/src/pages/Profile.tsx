@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
-import { albumStorage, subscriptionStorage, likeStorage, favoriteStorage } from '../services/storage'
+import { albumsApi, subscriptionsApi } from '../services/api'
 import { Album } from '../types'
 import Sidebar from '../components/Sidebar'
 import TopBar from '../components/TopBar'
@@ -22,33 +22,49 @@ const Profile = () => {
 
     setIsOwnProfile(targetUserId === currentUser?.sub)
 
-    // Load user's albums
-    const albums = albumStorage.getByArtist(targetUserId)
-    setUserAlbums(albums)
+    const loadProfile = async () => {
+      try {
+        // Load user's albums
+        const albums = await albumsApi.getByArtist(targetUserId)
+        setUserAlbums(albums)
 
-    // Count subscribers
-    const allSubscriptions = subscriptionStorage.getAll()
-    const userSubscribers = allSubscriptions.filter(sub => sub.artistId === targetUserId).length
-    setSubscribers(userSubscribers)
+        // Count subscribers (this would need a backend endpoint)
+        // For now, we'll get subscriptions and count
+        if (currentUser?.sub && targetUserId !== currentUser.sub) {
+          const subscribed = await subscriptionsApi.check(currentUser.sub, targetUserId)
+          setIsSubscribed(subscribed)
+        }
 
-    // Check if current user is subscribed
-    if (currentUser?.sub && targetUserId !== currentUser.sub) {
-      setIsSubscribed(subscriptionStorage.isSubscribed(currentUser.sub, targetUserId))
+        // TODO: Add endpoint to get subscriber count
+        setSubscribers(0) // Placeholder
+      } catch (error) {
+        console.error('Error loading profile:', error)
+      }
     }
+
+    loadProfile()
   }, [userId, currentUser])
 
-  const handleSubscribe = () => {
+  const handleSubscribe = async () => {
     if (!currentUser?.sub || !userId) return
-    subscriptionStorage.subscribe(currentUser.sub, userId)
-    setIsSubscribed(true)
-    setSubscribers(prev => prev + 1)
+    try {
+      await subscriptionsApi.subscribe(currentUser.sub, userId)
+      setIsSubscribed(true)
+      setSubscribers(prev => prev + 1)
+    } catch (error) {
+      console.error('Error subscribing:', error)
+    }
   }
 
-  const handleUnsubscribe = () => {
+  const handleUnsubscribe = async () => {
     if (!currentUser?.sub || !userId) return
-    subscriptionStorage.unsubscribe(currentUser.sub, userId)
-    setIsSubscribed(false)
-    setSubscribers(prev => Math.max(0, prev - 1))
+    try {
+      await subscriptionsApi.unsubscribe(currentUser.sub, userId)
+      setIsSubscribed(false)
+      setSubscribers(prev => Math.max(0, prev - 1))
+    } catch (error) {
+      console.error('Error unsubscribing:', error)
+    }
   }
 
   const user = userId ? { sub: userId } : currentUser

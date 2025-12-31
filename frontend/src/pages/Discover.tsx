@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
-import { albumStorage, subscriptionStorage, likeStorage, favoriteStorage } from '../services/storage'
+import { albumsApi, subscriptionsApi } from '../services/api'
 import { Album } from '../types'
 import Sidebar from '../components/Sidebar'
 import TopBar from '../components/TopBar'
@@ -11,40 +11,64 @@ const Discover = () => {
   const { user } = useAuth0()
   const [albums, setAlbums] = useState<Album[]>([])
   const [filter, setFilter] = useState<'all' | 'subscribed'>('all')
+  const [subscriptionStatus, setSubscriptionStatus] = useState<Map<string, boolean>>(new Map())
 
   useEffect(() => {
     loadAlbums()
   }, [filter, user])
 
-  const loadAlbums = () => {
-    let allAlbums = albumStorage.getAll()
-    
-    if (filter === 'subscribed' && user?.sub) {
-      const subscriptions = subscriptionStorage.getSubscriptions(user.sub)
-      const subscribedArtistIds = subscriptions.map(sub => sub.artistId)
-      allAlbums = allAlbums.filter(album => subscribedArtistIds.includes(album.artistId))
+  const loadAlbums = async () => {
+    try {
+      let allAlbums = await albumsApi.getAll()
+      
+      if (filter === 'subscribed' && user?.sub) {
+        const subscriptions = await subscriptionsApi.getUserSubscriptions(user.sub)
+        const subscribedArtistIds = subscriptions.map(sub => sub.artistId)
+        allAlbums = allAlbums.filter(album => subscribedArtistIds.includes(album.artistId))
+      }
+      
+      // Sort by creation date (newest first)
+      allAlbums.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      setAlbums(allAlbums)
+
+      // Load subscription status for all albums
+      if (user?.sub) {
+        const statusMap = new Map<string, boolean>()
+        await Promise.all(
+          allAlbums.map(async (album) => {
+            if (album.artistId !== user.sub) {
+              const subscribed = await subscriptionsApi.check(user.sub, album.artistId)
+              statusMap.set(album.artistId, subscribed)
+            }
+          })
+        )
+        setSubscriptionStatus(statusMap)
+      }
+    } catch (error) {
+      console.error('Error loading albums:', error)
     }
-    
-    // Sort by creation date (newest first)
-    allAlbums.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    setAlbums(allAlbums)
   }
 
-  const handleSubscribe = (artistId: string) => {
+  const handleSubscribe = async (artistId: string) => {
     if (!user?.sub) return
-    subscriptionStorage.subscribe(user.sub, artistId)
-    loadAlbums()
+    try {
+      await subscriptionsApi.subscribe(user.sub, artistId)
+      setSubscriptionStatus(prev => new Map(prev).set(artistId, true))
+      loadAlbums()
+    } catch (error) {
+      console.error('Error subscribing:', error)
+    }
   }
 
-  const handleUnsubscribe = (artistId: string) => {
+  const handleUnsubscribe = async (artistId: string) => {
     if (!user?.sub) return
-    subscriptionStorage.unsubscribe(user.sub, artistId)
-    loadAlbums()
-  }
-
-  const isSubscribed = (artistId: string) => {
-    if (!user?.sub) return false
-    return subscriptionStorage.isSubscribed(user.sub, artistId)
+    try {
+      await subscriptionsApi.unsubscribe(user.sub, artistId)
+      setSubscriptionStatus(prev => new Map(prev).set(artistId, false))
+      loadAlbums()
+    } catch (error) {
+      console.error('Error unsubscribing:', error)
+    }
   }
 
   return (
@@ -107,13 +131,17 @@ const Discover = () => {
                     </Link>
                     {album.artistId !== user?.sub && (
                       <button
-                        onClick={() => isSubscribed(album.artistId) 
-                          ? handleUnsubscribe(album.artistId)
-                          : handleSubscribe(album.artistId)
-                        }
-                        className={`subscribe-btn-small ${isSubscribed(album.artistId) ? 'subscribed' : ''}`}
+                        onClick={() => {
+                          const subscribed = subscriptionStatus.get(album.artistId) || false
+                          if (subscribed) {
+                            handleUnsubscribe(album.artistId)
+                          } else {
+                            handleSubscribe(album.artistId)
+                          }
+                        }}
+                        className={`subscribe-btn-small ${subscriptionStatus.get(album.artistId) ? 'subscribed' : ''}`}
                       >
-                        {isSubscribed(album.artistId) ? '✓' : '+'}
+                        {subscriptionStatus.get(album.artistId) ? '✓' : '+'}
                       </button>
                     )}
                   </div>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
-import { albumStorage } from '../services/storage'
+import { albumsApi } from '../services/api'
 import { Album } from '../types'
 import Sidebar from '../components/Sidebar'
 import TopBar from '../components/TopBar'
@@ -13,9 +13,16 @@ const MyAlbums = () => {
 
   useEffect(() => {
     if (user?.sub) {
-      const userAlbums = albumStorage.getByArtist(user.sub)
-      userAlbums.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      setAlbums(userAlbums)
+      const loadAlbums = async () => {
+        try {
+          const userAlbums = await albumsApi.getByArtist(user.sub)
+          userAlbums.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+          setAlbums(userAlbums)
+        } catch (error) {
+          console.error('Error loading albums:', error)
+        }
+      }
+      loadAlbums()
     }
   }, [user])
 

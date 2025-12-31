@@ -1,12 +1,86 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
-import { albumStorage, songStorage, subscriptionStorage, likeStorage, favoriteStorage } from '../services/storage'
+import { albumsApi, songsApi, subscriptionsApi, likesApi, favoritesApi } from '../services/api'
 import { Album, Song } from '../types'
 import { usePlayer } from '../contexts/PlayerContext'
 import Sidebar from '../components/Sidebar'
 import TopBar from '../components/TopBar'
 import './AlbumDetail.css'
+
+// Like button component
+const LikeButton = ({ songId, userId, onToggle }: { songId: string; userId: string; onToggle: (id: string) => void }) => {
+  const [isLiked, setIsLiked] = useState(false)
+  const [likeCount, setLikeCount] = useState(0)
+
+  useEffect(() => {
+    if (!userId) return
+    const loadLikeStatus = async () => {
+      try {
+        const [liked, count] = await Promise.all([
+          likesApi.check(userId, songId),
+          likesApi.getCount(songId),
+        ])
+        setIsLiked(liked)
+        setLikeCount(count)
+      } catch (error) {
+        console.error('Error loading like status:', error)
+      }
+    }
+    loadLikeStatus()
+  }, [userId, songId])
+
+  return (
+    <button
+      onClick={(e) => {
+        e.stopPropagation()
+        onToggle(songId)
+        setIsLiked(!isLiked)
+        setLikeCount(prev => isLiked ? prev - 1 : prev + 1)
+      }}
+      className={`action-button ${isLiked ? 'liked' : ''}`}
+    >
+      ❤️ {likeCount}
+    </button>
+  )
+}
+
+// Favorite button component
+const FavoriteButton = ({ songId, userId, onToggle }: { songId: string; userId: string; onToggle: (id: string) => void }) => {
+  const [isFavorited, setIsFavorited] = useState(false)
+  const [favoriteCount, setFavoriteCount] = useState(0)
+
+  useEffect(() => {
+    if (!userId) return
+    const loadFavoriteStatus = async () => {
+      try {
+        const [favorited, count] = await Promise.all([
+          favoritesApi.check(userId, songId),
+          favoritesApi.getCount(songId),
+        ])
+        setIsFavorited(favorited)
+        setFavoriteCount(count)
+      } catch (error) {
+        console.error('Error loading favorite status:', error)
+      }
+    }
+    loadFavoriteStatus()
+  }, [userId, songId])
+
+  return (
+    <button
+      onClick={(e) => {
+        e.stopPropagation()
+        onToggle(songId)
+        setIsFavorited(!isFavorited)
+        setFavoriteCount(prev => isFavorited ? prev - 1 : prev + 1)
+      }}
+      className={`action-button ${isFavorited ? 'favorited' : ''}`}
+    >
+      ⭐ {favoriteCount}
+    </button>
+  )
+}
 
 const AlbumDetail = () => {
   const { id } = useParams<{ id: string }>()
@@ -17,72 +91,107 @@ const AlbumDetail = () => {
   const [album, setAlbum] = useState<Album | null>(null)
   const [songs, setSongs] = useState<Song[]>([])
   const [selectedSong, setSelectedSong] = useState<Song | null>(null)
+  const [isSubscribed, setIsSubscribed] = useState(false)
 
   useEffect(() => {
     if (!id) return
     
-    const loadedAlbum = albumStorage.getById(id)
-    if (!loadedAlbum) {
-      navigate('/discover')
-      return
+    const loadAlbum = async () => {
+      try {
+        const loadedAlbum = await albumsApi.getById(id)
+        setAlbum(loadedAlbum)
+        
+        // Load songs for this album
+        const loadedSongs = await songsApi.getByAlbum(id)
+        setSongs(loadedSongs)
+        
+        // Set first song as selected if available
+        if (loadedSongs.length > 0) {
+          setSelectedSong(loadedSongs[0])
+        }
+      } catch (error) {
+        console.error('Error loading album:', error)
+        navigate('/discover')
+      }
     }
     
-    setAlbum(loadedAlbum)
-    
-    // Load songs for this album
-    const loadedSongs = songStorage.getByAlbum(id)
-    setSongs(loadedSongs)
-    
-    // Set first song as selected if available
-    if (loadedSongs.length > 0) {
-      setSelectedSong(loadedSongs[0])
-    }
+    loadAlbum()
   }, [id, navigate])
 
-  const handleSubscribe = () => {
+  const handleSubscribe = async () => {
     if (!user?.sub || !album) return
-    subscriptionStorage.subscribe(user.sub, album.artistId)
-    if (album) {
-      setAlbum({ ...album, subscribers: album.subscribers + 1 })
+    try {
+      await subscriptionsApi.subscribe(user.sub, album.artistId)
+      setIsSubscribed(true)
+      if (album) {
+        setAlbum({ ...album, subscribers: album.subscribers + 1 })
+      }
+    } catch (error) {
+      console.error('Error subscribing:', error)
     }
   }
 
-  const handleUnsubscribe = () => {
+  const handleUnsubscribe = async () => {
     if (!user?.sub || !album) return
-    subscriptionStorage.unsubscribe(user.sub, album.artistId)
-    if (album) {
-      setAlbum({ ...album, subscribers: Math.max(0, album.subscribers - 1) })
+    try {
+      await subscriptionsApi.unsubscribe(user.sub, album.artistId)
+      setIsSubscribed(false)
+      if (album) {
+        setAlbum({ ...album, subscribers: Math.max(0, album.subscribers - 1) })
+      }
+    } catch (error) {
+      console.error('Error unsubscribing:', error)
     }
   }
 
-  const handleLike = (songId: string) => {
+  const handleLike = async (songId: string) => {
     if (!user?.sub) return
-    const isLiked = likeStorage.toggle(user.sub, songId)
-    const song = songs.find(s => s.id === songId)
-    if (song) {
-      const updatedSong = { ...song, likes: song.likes + (isLiked ? 1 : -1) }
-      songStorage.update(songId, updatedSong)
-      setSongs(songs.map(s => s.id === songId ? updatedSong : s))
+    try {
+      await likesApi.toggle(user.sub, songId)
+      loadSongs()
+    } catch (error) {
+      console.error('Error toggling like:', error)
     }
   }
 
-  const handleFavorite = (songId: string) => {
+  const handleFavorite = async (songId: string) => {
     if (!user?.sub) return
-    const wasFavorited = favoriteStorage.isFavorited(user.sub, songId)
-    const isNowFavorited = favoriteStorage.toggle(user.sub, songId)
-    const song = songs.find(s => s.id === songId)
-    if (song) {
-      const updatedSong = { ...song, favorites: song.favorites + (isNowFavorited ? 1 : -1) }
-      songStorage.update(songId, updatedSong)
-      setSongs(songs.map(s => s.id === songId ? updatedSong : s))
+    try {
+      await favoritesApi.toggle(user.sub, songId)
+      loadSongs()
+    } catch (error) {
+      console.error('Error toggling favorite:', error)
     }
   }
+
+  const loadSongs = async () => {
+    if (!id) return
+    try {
+      const loadedSongs = await songsApi.getByAlbum(id)
+      setSongs(loadedSongs)
+    } catch (error) {
+      console.error('Error loading songs:', error)
+    }
+  }
+
+  useEffect(() => {
+    if (!user?.sub || !album) return
+    
+    const checkSubscription = async () => {
+      try {
+        const subscribed = await subscriptionsApi.check(user.sub, album.artistId)
+        setIsSubscribed(subscribed)
+      } catch (error) {
+        console.error('Error checking subscription:', error)
+      }
+    }
+    
+    checkSubscription()
+  }, [user, album])
 
   if (!album) {
     return <div>Loading...</div>
   }
-
-  const isSubscribed = user?.sub ? subscriptionStorage.isSubscribed(user.sub, album.artistId) : false
 
   return (
     <div className="spotify-app">
@@ -147,24 +256,8 @@ const AlbumDetail = () => {
                     </div>
                   </div>
                   <div className="song-actions">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleLike(song.id)
-                      }}
-                      className={`action-button ${likeStorage.isLiked(user?.sub || '', song.id) ? 'liked' : ''}`}
-                    >
-                      ❤️ {song.likes}
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleFavorite(song.id)
-                      }}
-                      className={`action-button ${favoriteStorage.isFavorited(user?.sub || '', song.id) ? 'favorited' : ''}`}
-                    >
-                      ⭐ {song.favorites}
-                    </button>
+                    <LikeButton songId={song.id} userId={user?.sub || ''} onToggle={handleLike} />
+                    <FavoriteButton songId={song.id} userId={user?.sub || ''} onToggle={handleFavorite} />
                   </div>
                 </div>
               ))}

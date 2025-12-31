@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
-import { albumStorage, songStorage } from '../services/storage'
-import { Album, Song, Track } from '../types'
+import { albumsApi, songsApi } from '../services/api'
+import { Album, Song } from '../types'
 import Sidebar from '../components/Sidebar'
 import TopBar from '../components/TopBar'
 import './CreateAlbum.css'
@@ -55,62 +55,58 @@ const CreateAlbum = () => {
     e.preventDefault()
     if (!user?.sub) return
 
-    // Create album
-    const album: Album = {
-      id: `album_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      title: albumTitle,
-      artist: user.name || user.email || 'Unknown Artist',
-      artistId: user.sub,
-      description: albumDescription,
-      songs: [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      likes: 0,
-      subscribers: 0,
-    }
-
-    // Process each song
-    const createdSongs: Song[] = []
-    for (const songData of songs) {
-      if (!songData.title || songData.tracks.length === 0) continue
-
-      // Create URLs for uploaded files (using object URLs for now)
-      const processedTracks: Track[] = songData.tracks
-        .filter(t => t.file && t.name)
-        .map((t, idx) => ({
-          id: `track_${Date.now()}_${idx}_${Math.random().toString(36).substr(2, 9)}`,
-          name: t.name,
-          url: t.file ? URL.createObjectURL(t.file) : '',
-          enabled: true,
-        }))
-
-      if (processedTracks.length === 0) continue
-
-      const song: Song = {
-        id: `song_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        title: songData.title,
-        artist: songData.artist || album.artist,
-        albumId: album.id,
-        tracks: processedTracks,
-        createdAt: new Date().toISOString(),
+    try {
+      // Create album first
+      const album = await albumsApi.create({
+        title: albumTitle,
+        artist: user.name || user.email || 'Unknown Artist',
+        artistId: user.sub,
+        description: albumDescription,
+        songs: [],
         likes: 0,
-        favorites: 0,
+        subscribers: 0,
+      })
+
+      // Upload each song with tracks
+      const createdSongs: Song[] = []
+      for (const songData of songs) {
+        if (!songData.title || songData.tracks.length === 0) continue
+
+        // Filter tracks that have files
+        const tracksWithFiles = songData.tracks.filter(t => t.file && t.name)
+        if (tracksWithFiles.length === 0) continue
+
+        try {
+          const song = await songsApi.create({
+            title: songData.title,
+            artist: songData.artist || album.artist,
+            albumId: album.id,
+            tracks: tracksWithFiles.map(t => ({
+              name: t.name!,
+              file: t.file!,
+            })),
+          })
+
+          createdSongs.push(song)
+        } catch (error) {
+          console.error('Error creating song:', error)
+          alert(`Error uploading song "${songData.title}": ${error instanceof Error ? error.message : 'Unknown error'}`)
+        }
       }
 
-      createdSongs.push(song)
-      songStorage.create(song)
+      if (createdSongs.length === 0) {
+        alert('Please add at least one song with tracks!')
+        // Delete the album if no songs were created
+        await albumsApi.delete(album.id)
+        return
+      }
+
+      alert('Album created successfully!')
+      navigate(`/album/${album.id}`)
+    } catch (error) {
+      console.error('Error creating album:', error)
+      alert(`Error creating album: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
-
-    if (createdSongs.length === 0) {
-      alert('Please add at least one song with tracks!')
-      return
-    }
-
-    album.songs = createdSongs.map(s => s.id)
-    albumStorage.create(album)
-
-    alert('Album created successfully!')
-    navigate(`/album/${album.id}`)
   }
 
   return (

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
-import { favoriteStorage, songStorage, albumStorage } from '../services/storage'
+import { favoritesApi, songsApi, albumsApi } from '../services/api'
 import { Song, Album } from '../types'
 import Sidebar from '../components/Sidebar'
 import TopBar from '../components/TopBar'
@@ -13,14 +13,26 @@ const MyFavorites = () => {
 
   useEffect(() => {
     if (user?.sub) {
-      const favorites = favoriteStorage.getUserFavorites(user.sub)
-      const songsWithAlbums = favorites.map(fav => {
-        const song = songStorage.getById(fav.songId)
-        const album = song ? albumStorage.getById(song.albumId) : null
-        return { song, album }
-      }).filter(item => item.song !== undefined) as Array<{ song: Song; album: Album | null }>
-      
-      setFavoriteSongs(songsWithAlbums)
+      const loadFavorites = async () => {
+        try {
+          const favorites = await favoritesApi.getUserFavorites(user.sub)
+          const songsWithAlbums = await Promise.all(
+            favorites.map(async (fav) => {
+              try {
+                const song = await songsApi.getById(fav.songId)
+                const album = await albumsApi.getById(song.albumId).catch(() => null)
+                return { song, album }
+              } catch {
+                return null
+              }
+            })
+          )
+          setFavoriteSongs(songsWithAlbums.filter(item => item !== null) as Array<{ song: Song; album: Album | null }>)
+        } catch (error) {
+          console.error('Error loading favorites:', error)
+        }
+      }
+      loadFavorites()
     }
   }, [user])
 
