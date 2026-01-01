@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
+import { useIsAdmin } from '../utils/admin'
 import './ProfileDropdown.css'
 
 interface ProfileDropdownProps {
@@ -16,6 +17,7 @@ const ProfileDropdown = ({ user }: ProfileDropdownProps) => {
   const [imageError, setImageError] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const { logout } = useAuth0()
+  const isAdmin = useIsAdmin()
   // const navigate = useNavigate() // Reserved for future use
 
   useEffect(() => {
@@ -122,6 +124,20 @@ const ProfileDropdown = ({ user }: ProfileDropdownProps) => {
             <span className="dropdown-icon settings-icon"></span>
             <span>Settings</span>
           </Link>
+
+          {isAdmin && (
+            <>
+              <div className="dropdown-divider"></div>
+              <Link
+                to="/admin"
+                className="dropdown-item"
+                onClick={() => setIsOpen(false)}
+              >
+                <span className="dropdown-icon admin-icon"></span>
+                <span>Admin Panel</span>
+              </Link>
+            </>
+          )}
 
           <div className="dropdown-divider"></div>
 
