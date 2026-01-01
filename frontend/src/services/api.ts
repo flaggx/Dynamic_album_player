@@ -18,9 +18,14 @@ async function apiCall<T>(endpoint: string, options?: RequestInit): Promise<T> {
 
   // Add auth token if available
   if (getAccessToken) {
-    const token = await getAccessToken()
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`
+    try {
+      const token = await getAccessToken()
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+    } catch (error) {
+      console.error('Error getting access token:', error)
+      // Continue without token - let the API return 401 if needed
     }
   }
 

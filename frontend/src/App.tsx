@@ -245,8 +245,21 @@ const AuthSetup = ({ children }: { children: React.ReactNode }) => {
   const { getAccessTokenSilently } = useAuth0()
 
   useEffect(() => {
-    setAuthTokenGetter(() => getAccessTokenSilently())
-  }, [getAccessTokenSilently])
+    setAuthTokenGetter(async () => {
+      try {
+        // Get access token with audience for API
+        const token = await getAccessTokenSilently({
+          authorizationParams: {
+            audience: audience,
+          },
+        })
+        return token
+      } catch (error) {
+        console.error('Error getting access token:', error)
+        return undefined
+      }
+    })
+  }, [getAccessTokenSilently, audience])
 
   return <>{children}</>
 }
