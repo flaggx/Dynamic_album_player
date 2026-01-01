@@ -58,7 +58,7 @@ FROM node:20-alpine
 RUN apk add --no-cache nginx gettext
 
 # Create directories
-RUN mkdir -p /app/backend /app/frontend/dist /etc/nginx/templates /etc/nginx/conf.d /var/log/nginx /var/cache/nginx /run/nginx
+RUN mkdir -p /app/backend /app/frontend/dist /etc/nginx/templates /etc/nginx/http.d /var/log/nginx /var/cache/nginx /run/nginx
 
 # Copy backend files
 COPY --from=backend-builder /app/backend/package*.json /app/backend/
@@ -68,7 +68,7 @@ COPY --from=backend-builder /app/backend/dist /app/backend/dist
 # Copy frontend built files
 COPY --from=frontend-builder /app/frontend/dist /usr/share/nginx/html
 
-# Copy nginx configuration template
+# Copy nginx server configuration template (default nginx.conf includes /etc/nginx/http.d/*.conf)
 COPY frontend/nginx.conf /etc/nginx/templates/default.conf.template
 
 # Copy startup script
