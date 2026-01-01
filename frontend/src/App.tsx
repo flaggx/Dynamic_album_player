@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Auth0Provider, useAuth0 } from '@auth0/auth0-react'
 // Toaster imported but not used - react-hot-toast works without explicit Toaster component in newer versions
 import { PlayerProvider } from './contexts/PlayerContext'
+import { SidebarProvider } from './contexts/SidebarContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import BottomPlayer from './components/BottomPlayer'
 import Home from './pages/Home'
@@ -230,10 +231,12 @@ function App() {
         cacheLocation="localstorage"
       >
         <AuthSetup>
-          <PlayerProvider>
-            {routes}
-            <BottomPlayer />
-          </PlayerProvider>
+          <SidebarProvider>
+            <PlayerProvider>
+              {routes}
+              <BottomPlayer />
+            </PlayerProvider>
+          </SidebarProvider>
         </AuthSetup>
       </Auth0Provider>
     </ErrorBoundary>

@@ -185,12 +185,22 @@
     margin-left: 0;
   }
 
-  .sidebar {
-    transform: translateX(-100%);
+  .content-area {
+    padding: 16px;
   }
 
   .quick-access-grid {
     grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .greeting-section h1 {
+    font-size: 24px;
+  }
+
+  .cards-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 16px;
   }
 }
 

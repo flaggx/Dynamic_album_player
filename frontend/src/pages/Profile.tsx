@@ -78,7 +78,25 @@ const Profile = () => {
   }
 
   const user = userId ? { sub: userId } : currentUser
-  const displayName = currentUser?.name || currentUser?.email || 'User'
+  
+  // Helper function to get display name with fallbacks (same logic as ProfileDropdown)
+  const getDisplayName = (user: any): string => {
+    if (user?.name) return user.name
+    if ((user as any)?.nickname) return (user as any).nickname
+    if ((user as any)?.given_name && (user as any)?.family_name) {
+      return `${(user as any).given_name} ${(user as any).family_name}`
+    }
+    if ((user as any)?.given_name) return (user as any).given_name
+    if (user?.email) {
+      // Extract name from email (part before @)
+      const emailName = user.email.split('@')[0]
+      // Capitalize first letter
+      return emailName.charAt(0).toUpperCase() + emailName.slice(1)
+    }
+    return 'User'
+  }
+  
+  const displayName = getDisplayName(currentUser)
   const displayEmail = currentUser?.email || ''
 
   return (

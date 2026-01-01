@@ -1,13 +1,17 @@
 import { Link, useLocation } from 'react-router-dom'
+import { useSidebar } from '../contexts/SidebarContext'
 import './Sidebar.css'
 
 const Sidebar = () => {
   const location = useLocation()
+  const { isOpen, closeSidebar } = useSidebar()
 
   const isActive = (path: string) => location.pathname === path
 
   return (
-    <div className="sidebar">
+    <>
+      {isOpen && <div className="sidebar-overlay" onClick={closeSidebar} />}
+      <div className={`sidebar ${isOpen ? 'sidebar-open' : ''}`}>
       <div className="sidebar-content">
         <div className="sidebar-logo">
           <span className="logo-icon"></span>
@@ -18,6 +22,7 @@ const Sidebar = () => {
           <Link 
             to="/" 
             className={`nav-item ${isActive('/') ? 'active' : ''}`}
+            onClick={closeSidebar}
           >
             <span className="nav-icon">⌂</span>
             <span className="nav-text">Home</span>
@@ -26,6 +31,7 @@ const Sidebar = () => {
           <Link 
             to="/discover" 
             className={`nav-item ${isActive('/discover') ? 'active' : ''}`}
+            onClick={closeSidebar}
           >
             <span className="nav-icon search-icon"></span>
             <span className="nav-text">Search</span>
@@ -34,6 +40,7 @@ const Sidebar = () => {
           <Link 
             to="/my-albums" 
             className={`nav-item ${isActive('/my-albums') ? 'active' : ''}`}
+            onClick={closeSidebar}
           >
             <span className="nav-icon library-icon"></span>
             <span className="nav-text">Your Library</span>
@@ -42,7 +49,7 @@ const Sidebar = () => {
 
         <div className="sidebar-section">
           <div className="sidebar-section-header">
-            <Link to="/create-album" className="create-playlist-btn">
+            <Link to="/create-album" className="create-playlist-btn" onClick={closeSidebar}>
               <span className="nav-icon">+</span>
               <span className="nav-text">Create Album</span>
             </Link>
@@ -56,6 +63,7 @@ const Sidebar = () => {
           <Link 
             to="/my-favorites" 
             className={`nav-item ${isActive('/my-favorites') ? 'active' : ''}`}
+            onClick={closeSidebar}
           >
             <span className="nav-icon heart-icon"></span>
             <span className="nav-text">Liked Songs</span>
@@ -63,6 +71,7 @@ const Sidebar = () => {
         </div>
       </div>
     </div>
+    </>
   )
 }
 

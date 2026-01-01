@@ -33,6 +33,16 @@
   transition: background-color 0.2s;
 }
 
+.nav-button.hamburger-menu {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .nav-button.hamburger-menu {
+    display: flex;
+  }
+}
+
 .nav-button:hover:not(:disabled) {
   background-color: var(--spotify-gray);
 }
@@ -87,5 +97,25 @@
   align-items: center;
   gap: 16px;
   flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .top-bar {
+    padding: 0 16px;
+  }
+
+  .top-bar-center {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .top-bar-search-form {
+    max-width: 100%;
+  }
+
+  .top-bar-search-input {
+    font-size: 14px;
+    padding: 0 12px 0 36px;
+  }
 }
 
