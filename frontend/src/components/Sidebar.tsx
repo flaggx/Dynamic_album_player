@@ -53,7 +53,10 @@ const Sidebar = () => {
           <div className="sidebar-section-header">
             <span className="section-title">Your Playlists</span>
           </div>
-          <Link to="/my-favorites" className="nav-item">
+          <Link 
+            to="/my-favorites" 
+            className={`nav-item ${isActive('/my-favorites') ? 'active' : ''}`}
+          >
             <span className="nav-icon heart-icon"></span>
             <span className="nav-text">Liked Songs</span>
           </Link>
