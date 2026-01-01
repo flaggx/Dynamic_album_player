@@ -43,15 +43,11 @@ const Sidebar = () => {
 
         <div className="sidebar-section">
           <div className="sidebar-section-header">
-            <button className="create-playlist-btn">
+            <Link to="/create-album" className="create-playlist-btn">
               <span className="nav-icon">+</span>
               <span className="nav-text">Create Album</span>
-            </button>
+            </Link>
           </div>
-          <Link to="/create-album" className="create-album-link">
-            <span className="nav-icon">🎵</span>
-            <span className="nav-text">Create Album</span>
-          </Link>
         </div>
 
         <div className="sidebar-section">

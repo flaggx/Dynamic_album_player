@@ -15,19 +15,19 @@ const Home = () => {
             <h1>Good evening</h1>
             <div className="quick-access-grid">
               <Link to="/discover" className="quick-access-card">
-                <div className="card-icon">🔍</div>
+                <div className="card-icon search-icon"></div>
                 <span>Search</span>
               </Link>
               <Link to="/create-album" className="quick-access-card">
-                <div className="card-icon">➕</div>
+                <div className="card-icon plus-icon"></div>
                 <span>Create Album</span>
               </Link>
               <Link to="/my-albums" className="quick-access-card">
-                <div className="card-icon">📚</div>
+                <div className="card-icon library-icon"></div>
                 <span>Your Library</span>
               </Link>
               <Link to="/my-favorites" className="quick-access-card">
-                <div className="card-icon">⭐</div>
+                <div className="card-icon heart-icon"></div>
                 <span>Liked Songs</span>
               </Link>
             </div>
@@ -41,14 +41,14 @@ const Home = () => {
             <div className="cards-grid">
               <Link to="/discover" className="feature-card">
                 <div className="feature-card-image">
-                  <span>🔍</span>
+                  <span className="feature-icon search-icon"></span>
                 </div>
                 <div className="feature-card-title">Discover</div>
                 <div className="feature-card-subtitle">Explore new albums</div>
               </Link>
               <Link to="/create-album" className="feature-card">
                 <div className="feature-card-image">
-                  <span>➕</span>
+                  <span className="feature-icon plus-icon"></span>
                 </div>
                 <div className="feature-card-title">Create</div>
                 <div className="feature-card-subtitle">Upload your music</div>
