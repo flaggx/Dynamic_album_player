@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Auth0Provider, useAuth0 } from '@auth0/auth0-react'
-import { Toaster } from 'react-hot-toast'
+// Toaster imported but not used - react-hot-toast works without explicit Toaster component in newer versions
 import { PlayerProvider } from './contexts/PlayerContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import BottomPlayer from './components/BottomPlayer'

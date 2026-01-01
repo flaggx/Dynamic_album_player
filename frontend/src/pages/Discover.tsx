@@ -11,7 +11,7 @@ import './Discover.css'
 
 const Discover = () => {
   const { user } = useAuth0()
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [searchParams] = useSearchParams()
   const [albums, setAlbums] = useState<Album[]>([])
   const [filter, setFilter] = useState<'all' | 'subscribed'>('all')
   const [subscriptionStatus, setSubscriptionStatus] = useState<Map<string, boolean>>(new Map())
@@ -51,7 +51,7 @@ const Discover = () => {
         await Promise.all(
           allAlbums.map(async (album) => {
             if (album.artistId !== user.sub) {
-              const subscribed = await subscriptionsApi.check(user.sub, album.artistId)
+              const subscribed = await subscriptionsApi.check(user.sub || '', album.artistId)
               statusMap.set(album.artistId, subscribed)
             }
           })

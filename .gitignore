@@ -29,6 +29,9 @@ dist-ssr
 # Documentation files (generated/analysis)
 IMPLEMENTATION_STATUS.md
 MVP_GAP_ANALYSIS.md
+DEPLOYMENT.md
+CUSTOM_DOMAIN_SETUP.md
+BUILD_TROUBLESHOOTING.md
 
 # Fly.io (optional - safe to commit, but can be ignored if preferred)
 # .fly/

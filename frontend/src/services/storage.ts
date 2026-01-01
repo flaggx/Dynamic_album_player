@@ -152,7 +152,7 @@ export const subscriptionStorage = {
 // Likes
 export const likeStorage = {
   isLiked: (userId: string, songId: string): boolean => {
-    return getItem(STORAGE_KEYS.LIKES, []).some(
+    return getItem<Like>(STORAGE_KEYS.LIKES, []).some(
       like => like.userId === userId && like.songId === songId
     )
   },
@@ -187,7 +187,7 @@ export const likeStorage = {
 // Favorites
 export const favoriteStorage = {
   isFavorited: (userId: string, songId: string): boolean => {
-    return getItem(STORAGE_KEYS.FAVORITES, []).some(
+    return getItem<Favorite>(STORAGE_KEYS.FAVORITES, []).some(
       fav => fav.userId === userId && fav.songId === songId
     )
   },

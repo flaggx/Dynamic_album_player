@@ -19,7 +19,7 @@ const MyAlbums = () => {
       const loadAlbums = async () => {
         setIsLoading(true)
         try {
-          const userAlbums = await albumsApi.getByArtist(user.sub)
+          const userAlbums = await albumsApi.getByArtist(user.sub || '')
           userAlbums.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
           setAlbums(userAlbums)
         } catch (error) {

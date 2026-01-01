@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
 import toast from 'react-hot-toast'
 import { albumsApi, songsApi } from '../services/api'
-import { Album, Song } from '../types'
+import { Song } from '../types'
 import Sidebar from '../components/Sidebar'
 import TopBar from '../components/TopBar'
 import LoadingSpinner from '../components/LoadingSpinner'
@@ -85,7 +85,7 @@ const CreateAlbum = () => {
         artist: user.name || user.email || 'Unknown Artist',
         artistId: user.sub, // Still needed for type, but backend uses token
         description: albumDescription.trim() || undefined,
-        coverImage: null,
+        coverImage: undefined,
         coverImageFile: coverImage || undefined,
         songs: [],
         likes: 0,

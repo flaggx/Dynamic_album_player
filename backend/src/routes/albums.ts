@@ -9,9 +9,9 @@ import { authenticate, optionalAuth, getUserId, AuthRequest } from '../middlewar
 import { CustomError } from '../middleware/errorHandler'
 
 const router = express.Router()
-const dbRun = promisify(db.run.bind(db))
-const dbGet = promisify(db.get.bind(db))
-const dbAll = promisify(db.all.bind(db))
+const dbRun = promisify(db.run.bind(db)) as (sql: string, params?: any[]) => Promise<any>
+const dbGet = promisify(db.get.bind(db)) as (sql: string, params?: any[]) => Promise<any>
+const dbAll = promisify(db.all.bind(db)) as (sql: string, params?: any[]) => Promise<any[]>
 
 // Configure multer for cover image uploads
 const uploadDir = process.env.UPLOAD_DIR || path.join(process.cwd(), 'uploads')
@@ -81,16 +81,16 @@ router.get('/', optionalAuth, async (req, res, next) => {
 // Get album by ID
 router.get('/:id', optionalAuth, async (req, res, next) => {
   try {
-    const album = await dbGet('SELECT * FROM albums WHERE id = ?', [req.params.id])
+    const album = await dbGet('SELECT * FROM albums WHERE id = ?', [req.params.id]) as any
     
     if (!album) {
       throw new CustomError('Album not found', 404)
     }
 
     // Get songs for this album
-    const songs = await dbAll('SELECT * FROM songs WHERE album_id = ?', [req.params.id])
+    const songs = await dbAll('SELECT * FROM songs WHERE album_id = ?', [req.params.id]) as any[]
     
-    res.json({ ...album, songs: songs.map(s => s.id) })
+    res.json({ ...album, songs: songs.map((s: any) => s.id) })
   } catch (error) {
     next(error)
   }
@@ -157,7 +157,7 @@ router.put('/:id', authenticate, uploadCoverImage.single('coverImage'), async (r
     }
 
     // Check if album exists and user owns it
-    const album = await dbGet('SELECT * FROM albums WHERE id = ?', [req.params.id])
+    const album = await dbGet('SELECT * FROM albums WHERE id = ?', [req.params.id]) as any
     if (!album) {
       throw new CustomError('Album not found', 404)
     }
@@ -204,7 +204,7 @@ router.delete('/:id', authenticate, async (req: AuthRequest, res, next) => {
     }
 
     // Check if album exists and user owns it
-    const album = await dbGet('SELECT * FROM albums WHERE id = ?', [req.params.id])
+    const album = await dbGet('SELECT * FROM albums WHERE id = ?', [req.params.id]) as any
     if (!album) {
       throw new CustomError('Album not found', 404)
     }

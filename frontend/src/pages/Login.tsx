@@ -7,9 +7,7 @@ const Login = () => {
   console.log('Auth0 state:', { isLoading, hasError: !!auth0Error })
 
   const handleLogin = () => {
-    loginWithRedirect({
-      screen_hint: 'signup',
-    }).catch((error) => {
+    loginWithRedirect().catch((error) => {
       console.error('Login error:', error)
     })
   }

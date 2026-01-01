@@ -4,7 +4,7 @@ import './Sidebar.css'
 
 const Sidebar = () => {
   const location = useLocation()
-  const { user } = useAuth0()
+  // const { user } = useAuth0() // Reserved for future use
 
   const isActive = (path: string) => location.pathname === path
 

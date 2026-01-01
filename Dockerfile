@@ -42,8 +42,8 @@ WORKDIR /app/backend
 COPY backend/package*.json ./
 COPY backend/tsconfig.json ./
 
-# Install dependencies
-RUN npm ci
+# Install dependencies (this layer will be cached if package.json doesn't change)
+RUN npm ci --prefer-offline --no-audit
 
 # Copy backend source code
 COPY backend/src ./src
@@ -75,8 +75,8 @@ COPY frontend/nginx.conf /etc/nginx/templates/default.conf.template
 COPY start.sh /start.sh
 RUN chmod +x /start.sh
 
-# Create uploads and data directories for backend
-RUN mkdir -p /app/backend/uploads /app/backend/data
+# Create storage directory structure for backend
+RUN mkdir -p /app/backend/storage/data /app/backend/storage/uploads
 
 # Set working directory to backend
 WORKDIR /app/backend

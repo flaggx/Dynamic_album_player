@@ -192,7 +192,7 @@ const AlbumDetail = () => {
     
     const checkSubscription = async () => {
       try {
-        const subscribed = await subscriptionsApi.check(user.sub, album.artistId)
+        const subscribed = await subscriptionsApi.check(user.sub || '', album.artistId)
         setIsSubscribed(subscribed)
       } catch (error) {
         console.error('Error checking subscription:', error)

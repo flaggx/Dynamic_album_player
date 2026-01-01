@@ -19,7 +19,7 @@ const MyFavorites = () => {
       const loadFavorites = async () => {
         setIsLoading(true)
         try {
-          const favorites = await favoritesApi.getUserFavorites(user.sub)
+          const favorites = await favoritesApi.getUserFavorites(user.sub || '')
           const songsWithAlbums = await Promise.all(
             favorites.map(async (fav) => {
               try {

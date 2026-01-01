@@ -10,9 +10,9 @@ import { authenticate, optionalAuth, getUserId, AuthRequest } from '../middlewar
 import { CustomError } from '../middleware/errorHandler'
 
 const router = express.Router()
-const dbRun = promisify(db.run.bind(db))
-const dbGet = promisify(db.get.bind(db))
-const dbAll = promisify(db.all.bind(db))
+const dbRun = promisify(db.run.bind(db)) as (sql: string, params?: any[]) => Promise<any>
+const dbGet = promisify(db.get.bind(db)) as (sql: string, params?: any[]) => Promise<any>
+const dbAll = promisify(db.all.bind(db)) as (sql: string, params?: any[]) => Promise<any[]>
 
 // Configure multer for file uploads
 const uploadDir = process.env.UPLOAD_DIR || path.join(process.cwd(), 'uploads')
@@ -220,7 +220,7 @@ router.put('/:id', authenticate, async (req: AuthRequest, res, next) => {
       throw new CustomError('Song not found', 404)
     }
 
-    const album = await dbGet('SELECT * FROM albums WHERE id = ?', [song.album_id])
+    const album = await dbGet('SELECT * FROM albums WHERE id = ?', [(song as any).album_id]) as any
     if (!album || album.artist_id !== userId) {
       throw new CustomError('Forbidden: You can only edit songs in your own albums', 403)
     }
@@ -258,16 +258,16 @@ router.delete('/:id', authenticate, async (req: AuthRequest, res, next) => {
       throw new CustomError('Song not found', 404)
     }
 
-    const album = await dbGet('SELECT * FROM albums WHERE id = ?', [song.album_id])
+    const album = await dbGet('SELECT * FROM albums WHERE id = ?', [(song as any).album_id]) as any
     if (!album || album.artist_id !== userId) {
       throw new CustomError('Forbidden: You can only delete songs from your own albums', 403)
     }
 
     // Get track file paths before deleting
-    const tracks = await dbAll('SELECT file_path FROM tracks WHERE song_id = ?', [req.params.id])
+    const tracks = await dbAll('SELECT file_path FROM tracks WHERE song_id = ?', [req.params.id]) as Array<{ file_path: string }>
     
     // Delete files
-    tracks.forEach((track: { file_path: string }) => {
+    tracks.forEach((track) => {
       const filePath = path.join(process.cwd(), track.file_path.replace(/^\//, ''))
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath)

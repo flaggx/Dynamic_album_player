@@ -6,9 +6,9 @@ import { authenticate, optionalAuth, getUserId, AuthRequest } from '../middlewar
 import { CustomError } from '../middleware/errorHandler'
 
 const router = express.Router()
-const dbRun = promisify(db.run.bind(db))
-const dbGet = promisify(db.get.bind(db))
-const dbAll = promisify(db.all.bind(db))
+const dbRun = promisify(db.run.bind(db)) as (sql: string, params?: any[]) => Promise<any>
+const dbGet = promisify(db.get.bind(db)) as (sql: string, params?: any[]) => Promise<any>
+const dbAll = promisify(db.all.bind(db)) as (sql: string, params?: any[]) => Promise<any[]>
 
 // Get user subscriptions
 router.get('/user/:userId', authenticate, async (req: AuthRequest, res, next) => {

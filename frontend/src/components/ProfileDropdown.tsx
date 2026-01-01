@@ -16,7 +16,7 @@ const ProfileDropdown = ({ user }: ProfileDropdownProps) => {
   const [imageError, setImageError] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const { logout } = useAuth0()
-  const navigate = useNavigate()
+  // const navigate = useNavigate() // Reserved for future use
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

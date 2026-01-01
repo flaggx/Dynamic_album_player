@@ -5,8 +5,8 @@ import { authenticate, optionalAuth, getUserId, AuthRequest } from '../middlewar
 import { CustomError } from '../middleware/errorHandler'
 
 const router = express.Router()
-const dbGet = promisify(db.get.bind(db))
-const dbRun = promisify(db.run.bind(db))
+const dbGet = promisify(db.get.bind(db)) as (sql: string, params?: any[]) => Promise<any>
+const dbRun = promisify(db.run.bind(db)) as (sql: string, params?: any[]) => Promise<any>
 
 // Get user by ID
 router.get('/:id', optionalAuth, async (req, res, next) => {

@@ -6,9 +6,9 @@ import { authenticate, optionalAuth, getUserId, AuthRequest } from '../middlewar
 import { CustomError } from '../middleware/errorHandler'
 
 const router = express.Router()
-const dbRun = promisify(db.run.bind(db))
-const dbGet = promisify(db.get.bind(db))
-const dbAll = promisify(db.all.bind(db))
+const dbRun = promisify(db.run.bind(db)) as (sql: string, params?: any[]) => Promise<any>
+const dbGet = promisify(db.get.bind(db)) as (sql: string, params?: any[]) => Promise<any>
+const dbAll = promisify(db.all.bind(db)) as (sql: string, params?: any[]) => Promise<any[]>
 
 // Get like count for song
 router.get('/song/:songId/count', optionalAuth, async (req, res, next) => {
@@ -16,7 +16,7 @@ router.get('/song/:songId/count', optionalAuth, async (req, res, next) => {
     const result = await dbGet(
       'SELECT COUNT(*) as count FROM likes WHERE song_id = ?',
       [req.params.songId]
-    )
+    ) as any
     // SQLite COUNT returns a number, ensure it's converted properly
     const count = result?.count ? Number(result.count) : 0
     res.json({ count })

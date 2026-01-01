@@ -15,9 +15,9 @@ const Callback = () => {
           await usersApi.createOrUpdate({
             id: user.sub || '',
             email: user.email || '',
-            name: user.name || null,
-            picture: user.picture || null,
-            bio: null,
+            name: user.name || undefined,
+            picture: user.picture || undefined,
+            bio: undefined,
           })
         } catch (error) {
           console.error('Error syncing user:', error)

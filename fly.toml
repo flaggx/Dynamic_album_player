@@ -28,8 +28,8 @@ primary_region = "iad"
   BACKEND_URL = "http://localhost:3001"
   PORT = "3001"
   NODE_ENV = "production"
-  DATABASE_PATH = "/app/backend/data/database.sqlite"
-  UPLOAD_DIR = "/app/backend/uploads"
+  DATABASE_PATH = "/app/backend/storage/data/database.sqlite"
+  UPLOAD_DIR = "/app/backend/storage/uploads"
   CORS_ORIGIN = "https://lost-camp-studios.fly.dev"
 
 # Persistent storage volumes for database and uploads
@@ -38,10 +38,6 @@ primary_region = "iad"
 # flyctl volumes create lost-camp-studios-uploads --size 10 --region iad
 
 [[mounts]]
-  source = "lost-camp-studios-data"
-  destination = "/app/backend/data"
-
-[[mounts]]
-  source = "lost-camp-studios-uploads"
-  destination = "/app/backend/uploads"
+  source = "lostcampstudios_storage"
+  destination = "/app/backend/storage"
 

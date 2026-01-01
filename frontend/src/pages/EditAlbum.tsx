@@ -56,7 +56,6 @@ const EditAlbum = () => {
       await albumsApi.update(id, {
         title: albumTitle,
         description: albumDescription,
-        coverImageFile: coverImage || undefined,
       })
 
       alert('Album updated successfully!')
