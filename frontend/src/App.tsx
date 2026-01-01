@@ -242,9 +242,13 @@ function App() {
 
 // Component to set up auth token getter
 const AuthSetup = ({ children }: { children: React.ReactNode }) => {
-  const { getAccessTokenSilently } = useAuth0()
+  const { getAccessTokenSilently, isAuthenticated } = useAuth0()
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      return
+    }
+
     setAuthTokenGetter(async () => {
       try {
         // Get access token with audience for API
@@ -252,14 +256,20 @@ const AuthSetup = ({ children }: { children: React.ReactNode }) => {
           authorizationParams: {
             audience: audience,
           },
+          cacheMode: 'off', // Force fresh token
         })
+        console.log('Access token retrieved successfully')
         return token
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error getting access token:', error)
+        // If token refresh fails, user may need to re-authenticate
+        if (error.error === 'login_required' || error.error === 'consent_required') {
+          console.warn('User needs to re-authenticate')
+        }
         return undefined
       }
     })
-  }, [getAccessTokenSilently, audience])
+  }, [getAccessTokenSilently, audience, isAuthenticated])
 
   return <>{children}</>
 }
