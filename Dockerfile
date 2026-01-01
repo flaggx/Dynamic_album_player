@@ -58,7 +58,7 @@ FROM node:20-alpine
 RUN apk add --no-cache nginx gettext
 
 # Create directories
-RUN mkdir -p /app/backend /app/frontend/dist /etc/nginx/templates /var/log/nginx /var/cache/nginx /run/nginx
+RUN mkdir -p /app/backend /app/frontend/dist /etc/nginx/templates /etc/nginx/conf.d /var/log/nginx /var/cache/nginx /run/nginx
 
 # Copy backend files
 COPY --from=backend-builder /app/backend/package*.json /app/backend/
