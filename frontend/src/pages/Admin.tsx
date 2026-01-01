@@ -24,6 +24,30 @@ const Admin = () => {
   const [banReason, setBanReason] = useState<{ [key: string]: string }>({})
   const [checkingAdmin, setCheckingAdmin] = useState(true)
 
+  const loadData = async () => {
+    setLoading(true)
+    try {
+      if (activeTab === 'albums') {
+        const allAlbums = await albumsApi.getAll()
+        setAlbums(allAlbums)
+      } else if (activeTab === 'songs') {
+        const allSongs = await songsApi.getAll()
+        setSongs(allSongs)
+      } else if (activeTab === 'users') {
+        const [banned, all] = await Promise.all([
+          adminApi.getBannedUsers(),
+          adminApi.getAllUsers()
+        ])
+        setBannedUsers(banned)
+        setAllUsers(all)
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to load data')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   useEffect(() => {
     // Wait for admin check to complete
     const timer = setTimeout(() => {
@@ -64,30 +88,6 @@ const Admin = () => {
   // If not admin after check, show nothing (redirect will happen)
   if (!isAdmin) {
     return null
-  }
-
-  const loadData = async () => {
-    setLoading(true)
-    try {
-      if (activeTab === 'albums') {
-        const allAlbums = await albumsApi.getAll()
-        setAlbums(allAlbums)
-      } else if (activeTab === 'songs') {
-        const allSongs = await songsApi.getAll()
-        setSongs(allSongs)
-      } else if (activeTab === 'users') {
-        const [banned, all] = await Promise.all([
-          adminApi.getBannedUsers(),
-          adminApi.getAllUsers()
-        ])
-        setBannedUsers(banned)
-        setAllUsers(all)
-      }
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to load data')
-    } finally {
-      setLoading(false)
-    }
   }
 
   const handleDeleteAlbum = async (albumId: string, albumTitle: string) => {
