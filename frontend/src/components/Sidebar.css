@@ -127,13 +127,13 @@
   align-items: center;
   gap: 16px;
   padding: 8px 12px;
-  background: none;
+  background: var(--spotify-white);
   border: none;
-  color: var(--spotify-light-gray);
+  color: var(--spotify-black);
   cursor: pointer;
-  border-radius: 4px;
-  transition: color 0.2s, background-color 0.2s;
-  font-weight: 500;
+  border-radius: 20px;
+  transition: transform 0.2s, background-color 0.2s;
+  font-weight: 700;
   font-size: 14px;
   width: 100%;
   text-align: left;
@@ -141,7 +141,7 @@
 }
 
 .create-playlist-btn:hover {
-  color: var(--spotify-white);
-  background-color: var(--spotify-gray);
+  background-color: rgba(255, 255, 255, 0.9);
+  transform: scale(1.02);
 }
 
