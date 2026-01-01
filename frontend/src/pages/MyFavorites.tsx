@@ -10,12 +10,48 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import './MyFavorites.css'
 
 const MyFavorites = () => {
-  const { user } = useAuth0()
+  const { user, getAccessTokenSilently } = useAuth0()
   const [favoriteSongs, setFavoriteSongs] = useState<Array<{ song: Song; album: Album | null }>>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [tokenReady, setTokenReady] = useState(false)
+
+  // Wait for access token to be available
+  useEffect(() => {
+    const waitForToken = async () => {
+      if (!user?.sub) {
+        setTokenReady(false)
+        return
+      }
+
+      // Wait a bit for AuthSetup to set up the token getter
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
+      try {
+        // Try to get access token to ensure it's available
+        const audience = import.meta.env.VITE_AUTH0_AUDIENCE
+        if (audience) {
+          await getAccessTokenSilently({
+            authorizationParams: {
+              audience: audience,
+            },
+          })
+          setTokenReady(true)
+        } else {
+          // If no audience, still mark as ready (might not need token)
+          setTokenReady(true)
+        }
+      } catch (error) {
+        console.warn('Token not ready yet, will retry:', error)
+        // Retry after a delay
+        setTimeout(() => setTokenReady(true), 1000)
+      }
+    }
+
+    waitForToken()
+  }, [user, getAccessTokenSilently])
 
   useEffect(() => {
-    if (user?.sub) {
+    if (user?.sub && tokenReady) {
       const loadFavorites = async () => {
         setIsLoading(true)
         try {
@@ -41,7 +77,7 @@ const MyFavorites = () => {
       }
       loadFavorites()
     }
-  }, [user])
+  }, [user, tokenReady])
 
   if (!user?.sub) {
     return <div>Loading...</div>
