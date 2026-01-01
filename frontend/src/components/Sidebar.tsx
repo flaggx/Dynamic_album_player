@@ -67,7 +67,7 @@ const Sidebar = () => {
               <span className="section-title">Admin</span>
             </div>
             <Link to="/admin" className={`nav-item ${isActive('/admin') ? 'active' : ''}`}>
-              <span className="nav-icon">⚙️</span>
+              <span className="nav-icon admin-icon"></span>
               <span className="nav-text">Admin Panel</span>
             </Link>
           </div>
