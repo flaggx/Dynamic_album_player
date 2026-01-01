@@ -25,12 +25,23 @@ const Admin = () => {
 
   useEffect(() => {
     if (!isAdmin) {
-      toast.error('Admin access required')
+      console.log('Not admin - checking user roles...')
+      console.log('User:', user)
+      // Check token claims directly
+      if (user) {
+        const roles = 
+          (user as any)['https://lostcampstudios.com/roles'] ||
+          (user as any)['https://lostcampstudios-api/roles'] ||
+          (user as any).roles ||
+          []
+        console.log('User roles from token:', roles)
+      }
+      toast.error('Admin access required. Make sure you have the admin role assigned and the Auth0 Action is configured.')
       navigate('/')
       return
     }
     loadData()
-  }, [isAdmin, activeTab, navigate])
+  }, [isAdmin, activeTab, navigate, user])
 
   const loadData = async () => {
     setLoading(true)
