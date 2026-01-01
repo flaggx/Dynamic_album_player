@@ -66,6 +66,8 @@ export const albumsApi = {
       songs: album.songs || [],
       createdAt: album.created_at || album.createdAt,
       updatedAt: album.updated_at || album.updatedAt,
+      likes: album.like_count || album.likes || 0,
+      subscribers: album.subscriber_count || album.subscribers || 0,
     }))
   },
 
@@ -76,6 +78,8 @@ export const albumsApi = {
       songs: album.songs || [],
       createdAt: album.created_at || album.createdAt,
       updatedAt: album.updated_at || album.updatedAt,
+      likes: album.like_count || album.likes || 0,
+      subscribers: album.subscriber_count || album.subscribers || 0,
     }
   },
 
@@ -86,6 +90,8 @@ export const albumsApi = {
       songs: album.songs || [],
       createdAt: album.created_at || album.createdAt,
       updatedAt: album.updated_at || album.updatedAt,
+      likes: album.like_count || album.likes || 0,
+      subscribers: album.subscriber_count || album.subscribers || 0,
     }))
   },
 
