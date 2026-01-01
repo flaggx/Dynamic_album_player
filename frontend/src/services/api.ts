@@ -23,14 +23,14 @@ async function apiCall<T>(endpoint: string, options?: RequestInit): Promise<T> {
       if (token) {
         headers['Authorization'] = `Bearer ${token}`
       } else {
-        console.warn('No access token available')
+        console.warn('No access token available for endpoint:', endpoint)
       }
     } catch (error) {
-      console.error('Error getting access token:', error)
+      console.error('Error getting access token for endpoint:', endpoint, error)
       // Try to continue - the API will return 401 if token is required
     }
   } else {
-    console.warn('getAccessToken function not set')
+    console.warn('getAccessToken function not set for endpoint:', endpoint)
   }
 
   const response = await fetch(`${API_URL}${endpoint}`, {
@@ -39,6 +39,16 @@ async function apiCall<T>(endpoint: string, options?: RequestInit): Promise<T> {
   })
 
   if (!response.ok) {
+    // Handle 401 specifically - might need re-authentication
+    if (response.status === 401) {
+      const error = await response.json().catch(() => ({ error: 'Unauthorized' }))
+      const errorMessage = error.error || 'Unauthorized'
+      // Check if this is due to missing token (not just invalid token)
+      if (errorMessage.includes('token') || errorMessage.includes('authentication')) {
+        console.warn('401 Unauthorized - user may need to re-authenticate')
+      }
+      throw new Error(errorMessage)
+    }
     const error = await response.json().catch(() => ({ error: 'Unknown error' }))
     throw new Error(error.error || `HTTP error! status: ${response.status}`)
   }

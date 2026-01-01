@@ -242,34 +242,70 @@ function App() {
 
 // Component to set up auth token getter
 const AuthSetup = ({ children }: { children: React.ReactNode }) => {
-  const { getAccessTokenSilently, isAuthenticated } = useAuth0()
+  const { getAccessTokenSilently, isAuthenticated, loginWithRedirect } = useAuth0()
+  const [needsReauth, setNeedsReauth] = React.useState(false)
 
   useEffect(() => {
     if (!isAuthenticated) {
+      // Clear token getter when not authenticated by setting it to a function that returns undefined
+      setAuthTokenGetter(async () => undefined)
       return
     }
 
     setAuthTokenGetter(async () => {
       try {
+        if (!audience) {
+          console.error('VITE_AUTH0_AUDIENCE is not set! Token requests will fail.')
+          return undefined
+        }
+        
         // Get access token with audience for API
         const token = await getAccessTokenSilently({
           authorizationParams: {
             audience: audience,
           },
-          cacheMode: 'off', // Force fresh token
+          // Remove cacheMode: 'off' to allow token caching
         })
-        console.log('Access token retrieved successfully')
+        if (token) {
+          console.log('Access token retrieved successfully with audience:', audience)
+          setNeedsReauth(false) // Reset reauth flag on success
+        } else {
+          console.warn('Access token is empty')
+        }
         return token
       } catch (error: any) {
         console.error('Error getting access token:', error)
-        // If token refresh fails, user may need to re-authenticate
-        if (error.error === 'login_required' || error.error === 'consent_required') {
-          console.warn('User needs to re-authenticate')
+        console.error('Error details:', {
+          error: error.error,
+          error_description: error.error_description,
+          audience: audience
+        })
+        
+        // Check for missing refresh token or login required errors
+        const errorMessage = error.error_description || error.message || ''
+        const isMissingRefreshToken = errorMessage.includes('Missing Refresh Token') || 
+                                     errorMessage.includes('refresh_token')
+        const needsLogin = error.error === 'login_required' || 
+                          error.error === 'consent_required' ||
+                          isMissingRefreshToken
+        
+        if (needsLogin && !needsReauth) {
+          console.warn('User needs to re-authenticate. Redirecting to login...')
+          setNeedsReauth(true)
+          // Trigger re-authentication with audience
+          loginWithRedirect({
+            authorizationParams: {
+              audience: audience,
+              prompt: 'login', // Force fresh login
+            },
+          }).catch((loginError) => {
+            console.error('Error during login redirect:', loginError)
+          })
         }
         return undefined
       }
     })
-  }, [getAccessTokenSilently, audience, isAuthenticated])
+  }, [getAccessTokenSilently, audience, isAuthenticated, loginWithRedirect, needsReauth])
 
   return <>{children}</>
 }
