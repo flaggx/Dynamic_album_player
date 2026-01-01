@@ -9,6 +9,9 @@ interface ProfileDropdownProps {
     picture?: string
     name?: string
     email?: string
+    nickname?: string
+    given_name?: string
+    family_name?: string
   }
 }
 
@@ -19,6 +22,23 @@ const ProfileDropdown = ({ user }: ProfileDropdownProps) => {
   const { logout } = useAuth0()
   const isAdmin = useIsAdmin()
   // const navigate = useNavigate() // Reserved for future use
+
+  // Helper function to get display name with fallbacks
+  const getDisplayName = (): string => {
+    if (user.name) return user.name
+    if (user.nickname) return user.nickname
+    if (user.given_name && user.family_name) return `${user.given_name} ${user.family_name}`
+    if (user.given_name) return user.given_name
+    if (user.email) {
+      // Extract name from email (part before @)
+      const emailName = user.email.split('@')[0]
+      // Capitalize first letter
+      return emailName.charAt(0).toUpperCase() + emailName.slice(1)
+    }
+    return 'User'
+  }
+
+  const displayName = getDisplayName()
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -79,7 +99,7 @@ const ProfileDropdown = ({ user }: ProfileDropdownProps) => {
                 </div>
               )}
               <div className="dropdown-user-details">
-                <div className="dropdown-user-name">{user.name || 'User'}</div>
+                <div className="dropdown-user-name">{displayName}</div>
                 <div className="dropdown-user-email">{user.email}</div>
               </div>
             </div>
