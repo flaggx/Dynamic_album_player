@@ -13,6 +13,7 @@ const Sidebar = () => {
     <div className="sidebar">
       <div className="sidebar-content">
         <div className="sidebar-logo">
+          <span className="logo-icon"></span>
           <span className="logo-text">Lost Camp Studios</span>
         </div>
 
