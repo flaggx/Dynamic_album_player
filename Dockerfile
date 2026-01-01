@@ -4,6 +4,21 @@ FROM node:20-alpine AS frontend-builder
 
 WORKDIR /app/frontend
 
+# Accept build arguments for Auth0 and API URL
+ARG VITE_AUTH0_DOMAIN
+ARG VITE_AUTH0_CLIENT_ID
+ARG VITE_AUTH0_AUDIENCE
+ARG VITE_AUTH0_REDIRECT_URI
+ARG VITE_API_URL
+
+# Set as environment variables for Vite build
+# Use empty string as default if not provided (Vite will handle validation)
+ENV VITE_AUTH0_DOMAIN=${VITE_AUTH0_DOMAIN:-}
+ENV VITE_AUTH0_CLIENT_ID=${VITE_AUTH0_CLIENT_ID:-}
+ENV VITE_AUTH0_AUDIENCE=${VITE_AUTH0_AUDIENCE:-}
+ENV VITE_AUTH0_REDIRECT_URI=${VITE_AUTH0_REDIRECT_URI:-}
+ENV VITE_API_URL=${VITE_API_URL:-}
+
 # Copy frontend package files
 COPY frontend/package*.json ./
 COPY frontend/tsconfig*.json ./

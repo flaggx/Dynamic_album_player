@@ -30,3 +30,6 @@ dist-ssr
 IMPLEMENTATION_STATUS.md
 MVP_GAP_ANALYSIS.md
 
+# Fly.io (optional - safe to commit, but can be ignored if preferred)
+# .fly/
+
