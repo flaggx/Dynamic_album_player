@@ -25,6 +25,8 @@ if (!AUTH0_DOMAIN) {
   console.warn('⚠️  AUTH0_DOMAIN not set. Authentication will be disabled.')
 }
 
+console.log('Auth0 config - Domain:', AUTH0_DOMAIN ? 'set' : 'NOT SET', 'Audience:', AUTH0_AUDIENCE ? 'set' : 'NOT SET')
+
 // JWT verification middleware
 export const authenticate = expressjwt({
   secret: expressJwtSecret({

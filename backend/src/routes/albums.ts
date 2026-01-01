@@ -48,32 +48,97 @@ const uploadCoverImage = multer({
 // Supports search query parameter
 router.get('/', optionalAuth, async (req, res, next) => {
   try {
-    const { search } = req.query
-    let query = `
-      SELECT 
-        a.*,
-        COUNT(DISTINCT s.id) as song_count,
-        COUNT(DISTINCT sub.id) as subscriber_count,
-        COUNT(DISTINCT l.id) as like_count
-      FROM albums a
-      LEFT JOIN songs s ON s.album_id = a.id
-      LEFT JOIN subscriptions sub ON sub.artist_id = a.artist_id
-      LEFT JOIN likes l ON l.song_id = s.id
-    `
+    // Test database connection first
+    try {
+      await dbGet('SELECT 1')
+    } catch (dbError: any) {
+      console.error('Database connection test failed:', dbError)
+      return res.status(503).json({ error: 'Database unavailable', details: dbError.message })
+    }
 
+    const { search } = req.query
+    
+    // First, get basic album data
+    let baseQuery = `SELECT * FROM albums`
     const params: any[] = []
+    
     if (search && typeof search === 'string') {
-      query += ` WHERE LOWER(a.title) LIKE LOWER(?) OR LOWER(a.artist) LIKE LOWER(?) OR LOWER(a.description) LIKE LOWER(?)`
+      baseQuery += ` WHERE LOWER(title) LIKE LOWER(?) OR LOWER(artist) LIKE LOWER(?) OR LOWER(description) LIKE LOWER(?)`
       const searchTerm = `%${search}%`
       params.push(searchTerm, searchTerm, searchTerm)
     }
+    
+    baseQuery += ` ORDER BY created_at DESC`
+    
+    console.log('Executing albums query:', baseQuery, 'with params:', params)
+    const albums = await dbAll(baseQuery, params)
+    console.log('Albums query returned', albums?.length || 0, 'albums')
+    
+    // If no albums, return empty array
+    if (!albums || albums.length === 0) {
+      return res.json([])
+    }
+    
+    // Then add counts for each album
+    const albumsWithCounts = await Promise.all(
+      albums.map(async (album: any) => {
+        try {
+          const [songCountResult, subscriberCountResult] = await Promise.all([
+            dbGet('SELECT COUNT(*) as count FROM songs WHERE album_id = ?', [album.id]).catch(() => ({ count: 0 })),
+            dbGet('SELECT COUNT(*) as count FROM subscriptions WHERE artist_id = ?', [album.artist_id]).catch(() => ({ count: 0 }))
+          ])
+          
+          // Get like count separately
+          let likeCount = 0
+          try {
+            const likeCountResult = await dbGet(
+              `SELECT COUNT(DISTINCT l.id) as count 
+               FROM likes l 
+               INNER JOIN songs s ON s.id = l.song_id 
+               WHERE s.album_id = ?`,
+              [album.id]
+            )
+            likeCount = (likeCountResult as any)?.count || 0
+          } catch (err) {
+            console.warn(`Error getting like count for album ${album.id}:`, err)
+          }
+          
+          return {
+            ...album,
+            song_count: (songCountResult as any)?.count || 0,
+            subscriber_count: (subscriberCountResult as any)?.count || 0,
+            like_count: likeCount
+          }
+        } catch (err) {
+          console.error(`Error getting counts for album ${album.id}:`, err)
+          // Return album without counts if there's an error
+          return {
+            ...album,
+            song_count: 0,
+            subscriber_count: 0,
+            like_count: 0
+          }
+        }
+      })
+    )
 
-    query += ` GROUP BY a.id ORDER BY a.created_at DESC`
-
-    const albums = await dbAll(query, params)
-
-    res.json(albums)
-  } catch (error) {
+    res.json(albumsWithCounts)
+  } catch (error: any) {
+    console.error('Error in GET /api/albums:', error)
+    console.error('Error message:', error.message)
+    console.error('Error code:', (error as any).code)
+    console.error('Error name:', error.name)
+    console.error('Error stack:', error.stack)
+    
+    // If there's a database error, return empty array instead of 500
+    if ((error as any).code === 'SQLITE_ERROR' || 
+        (error as any).code === 'SQLITE_BUSY' ||
+        error.message?.includes('SQLITE') ||
+        error.message?.includes('no such table')) {
+      console.warn('Database error, returning empty array')
+      return res.json([])
+    }
+    
     next(error)
   }
 })

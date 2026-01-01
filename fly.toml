@@ -31,6 +31,9 @@ primary_region = "iad"
   DATABASE_PATH = "/app/backend/storage/data/database.sqlite"
   UPLOAD_DIR = "/app/backend/storage/uploads"
   CORS_ORIGIN = "https://lostcampstudios.com"
+  # Auth0 configuration for backend JWT verification
+  AUTH0_DOMAIN = "dev-u6pgxr3vxi1gey2i.us.auth0.com"
+  AUTH0_AUDIENCE = "https://lostcampstudios-api"
 
 # Persistent storage volumes for database and uploads
 # Create volumes with:
