@@ -17,6 +17,8 @@ const Admin = () => {
   const [albums, setAlbums] = useState<Album[]>([])
   const [songs, setSongs] = useState<Song[]>([])
   const [bannedUsers, setBannedUsers] = useState<BannedUser[]>([])
+  const [allUsers, setAllUsers] = useState<any[]>([])
+  const [userSearch, setUserSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState<string | null>(null)
   const [banReason, setBanReason] = useState<{ [key: string]: string }>({})
@@ -228,12 +230,12 @@ const Admin = () => {
                       <h2 className="admin-section-title">All Users</h2>
                       <div className="admin-list">
                         {allUsers
-                          .filter(user => 
+                          .filter((user: any) => 
                             !userSearch || 
                             user.email?.toLowerCase().includes(userSearch.toLowerCase()) ||
                             user.name?.toLowerCase().includes(userSearch.toLowerCase())
                           )
-                          .map(user => (
+                          .map((user: any) => (
                             <div key={user.id} className="admin-item">
                               <div className="admin-item-info">
                                 <h3>{user.name || user.email}</h3>
@@ -277,11 +279,12 @@ const Admin = () => {
                               </div>
                             </div>
                           ))}
-                        {allUsers.filter(user => 
-                          !userSearch || 
-                          user.email?.toLowerCase().includes(userSearch.toLowerCase()) ||
-                          user.name?.toLowerCase().includes(userSearch.toLowerCase())
-                        ).length === 0 && (
+                        {allUsers
+                          .filter((user: any) => 
+                            !userSearch || 
+                            user.email?.toLowerCase().includes(userSearch.toLowerCase()) ||
+                            user.name?.toLowerCase().includes(userSearch.toLowerCase())
+                          ).length === 0 && (
                           <p className="admin-empty">No users found</p>
                         )}
                       </div>
