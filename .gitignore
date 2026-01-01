@@ -32,6 +32,7 @@ MVP_GAP_ANALYSIS.md
 DEPLOYMENT.md
 CUSTOM_DOMAIN_SETUP.md
 BUILD_TROUBLESHOOTING.md
+CLOUDFLARE_DNS_SETUP.md
 deploy.sh
 
 # Fly.io (optional - safe to commit, but can be ignored if preferred)
