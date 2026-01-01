@@ -22,26 +22,49 @@ const Admin = () => {
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState<string | null>(null)
   const [banReason, setBanReason] = useState<{ [key: string]: string }>({})
+  const [checkingAdmin, setCheckingAdmin] = useState(true)
 
   useEffect(() => {
-    if (!isAdmin) {
-      console.log('Not admin - checking user roles...')
-      console.log('User:', user)
-      // Check token claims directly
-      if (user) {
-        const roles = 
-          (user as any)['https://lostcampstudios.com/roles'] ||
-          (user as any)['https://lostcampstudios-api/roles'] ||
-          (user as any).roles ||
-          []
-        console.log('User roles from token:', roles)
+    // Wait for admin check to complete
+    const timer = setTimeout(() => {
+      setCheckingAdmin(false)
+      if (!isAdmin) {
+        console.log('Not admin - checking user roles...')
+        console.log('User:', user)
+        toast.error('Admin access required. Make sure you have the admin role assigned and the Auth0 Action is configured.')
+        navigate('/')
+        return
       }
-      toast.error('Admin access required. Make sure you have the admin role assigned and the Auth0 Action is configured.')
-      navigate('/')
-      return
-    }
-    loadData()
+      // Only load data if admin check passed
+      if (isAdmin) {
+        loadData()
+      }
+    }, 1000) // Give useIsAdmin time to complete async check
+
+    return () => clearTimeout(timer)
   }, [isAdmin, activeTab, navigate, user])
+
+  // Show loading while checking admin status
+  if (checkingAdmin) {
+    return (
+      <div className="spotify-app">
+        <Sidebar />
+        <div className="main-content">
+          <TopBar />
+          <div className="content-area">
+            <div className="admin-container">
+              <div className="admin-loading">Checking admin access...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // If not admin after check, show nothing (redirect will happen)
+  if (!isAdmin) {
+    return null
+  }
 
   const loadData = async () => {
     setLoading(true)
@@ -130,10 +153,6 @@ const Admin = () => {
     } catch (error: any) {
       toast.error(error.message || 'Failed to unban user')
     }
-  }
-
-  if (!isAdmin) {
-    return null
   }
 
   return (
