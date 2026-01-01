@@ -8,7 +8,22 @@ dist
 .DS_Store
 README.md
 docker-compose.yml
-backend/
+backend/node_modules
+backend/dist
+backend/data
+backend/uploads
+backend/test-uploads
+backend/.env
+backend/.env.local
+backend/vitest.config.ts
+backend/src/**/__tests__/
 frontend/node_modules
 frontend/dist
+frontend/.env
+frontend/.env.local
+frontend/vitest.config.ts
+frontend/src/test/
+frontend/src/**/*.test.tsx
+frontend/src/**/*.test.ts
+frontend/src/**/__tests__/
 

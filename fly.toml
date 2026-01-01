@@ -1,0 +1,45 @@
+# fly.toml app configuration file generated for lost-camp-studios on 2024-12-30T22:00:00Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = "lost-camp-studios"
+primary_region = "iad"
+
+[build]
+
+[http_service]
+  internal_port = 80
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+[[vm]]
+  memory_mb = 512
+  cpu_kind = "shared"
+  cpus = 1
+
+[env]
+  # Backend runs on localhost:3001 in the same container
+  BACKEND_URL = "http://localhost:3001"
+  PORT = "3001"
+  NODE_ENV = "production"
+  DATABASE_PATH = "/app/backend/data/database.sqlite"
+  UPLOAD_DIR = "/app/backend/uploads"
+  CORS_ORIGIN = "https://lost-camp-studios.fly.dev"
+
+# Persistent storage volumes for database and uploads
+# Create volumes with:
+# flyctl volumes create lost-camp-studios-data --size 1 --region iad
+# flyctl volumes create lost-camp-studios-uploads --size 10 --region iad
+
+[[mounts]]
+  source = "lost-camp-studios-data"
+  destination = "/app/backend/data"
+
+[[mounts]]
+  source = "lost-camp-studios-uploads"
+  destination = "/app/backend/uploads"
+
