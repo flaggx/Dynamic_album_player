@@ -35,6 +35,9 @@ export const initDatabase = (): Promise<void> => {
           name TEXT,
           picture TEXT,
           bio TEXT,
+          banned INTEGER DEFAULT 0,
+          banned_reason TEXT,
+          banned_at DATETIME,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
       `)

@@ -8,6 +8,7 @@ import userRoutes from './routes/users'
 import subscriptionRoutes from './routes/subscriptions'
 import likeRoutes from './routes/likes'
 import favoriteRoutes from './routes/favorites'
+import adminRoutes from './routes/admin'
 import { initDatabase } from './database/init'
 import { errorHandler } from './middleware/errorHandler'
 
@@ -34,6 +35,7 @@ app.use('/api/users', userRoutes)
 app.use('/api/subscriptions', subscriptionRoutes)
 app.use('/api/likes', likeRoutes)
 app.use('/api/favorites', favoriteRoutes)
+app.use('/api/admin', adminRoutes)
 
 // Root route
 app.get('/', (req, res) => {
@@ -48,7 +50,8 @@ app.get('/', (req, res) => {
       users: '/api/users',
       subscriptions: '/api/subscriptions',
       likes: '/api/likes',
-      favorites: '/api/favorites'
+      favorites: '/api/favorites',
+      admin: '/api/admin'
     }
   })
 })

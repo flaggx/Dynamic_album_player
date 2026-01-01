@@ -16,6 +16,7 @@ import Profile from './pages/Profile'
 import Settings from './pages/Settings'
 import MyAlbums from './pages/MyAlbums'
 import MyFavorites from './pages/MyFavorites'
+import Admin from './pages/Admin'
 import { setAuthTokenGetter } from './services/api'
 
 const domain = import.meta.env.VITE_AUTH0_DOMAIN
@@ -164,6 +165,14 @@ function App() {
           element={
             <ProtectedRoute>
               <MyFavorites />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute>
+              <Admin />
             </ProtectedRoute>
           }
         />

@@ -327,3 +327,43 @@ export const favoritesApi = {
   },
 }
 
+// Admin API
+export interface BannedUser {
+  id: string
+  email: string
+  name: string
+  banned_reason?: string
+  banned_at?: string
+}
+
+export const adminApi = {
+  deleteAlbum: async (albumId: string): Promise<void> => {
+    await apiCall(`/api/admin/albums/${albumId}`, { method: 'DELETE' })
+  },
+
+  deleteSong: async (songId: string): Promise<void> => {
+    await apiCall(`/api/admin/songs/${songId}`, { method: 'DELETE' })
+  },
+
+  banUser: async (userId: string, reason?: string): Promise<{ message: string; user: any }> => {
+    return apiCall(`/api/admin/users/${userId}/ban`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    })
+  },
+
+  unbanUser: async (userId: string): Promise<{ message: string; user: any }> => {
+    return apiCall(`/api/admin/users/${userId}/unban`, {
+      method: 'POST',
+    })
+  },
+
+  getBannedUsers: async (): Promise<BannedUser[]> => {
+    return apiCall<BannedUser[]>('/api/admin/users/banned')
+  },
+
+  getAllUsers: async (): Promise<any[]> => {
+    return apiCall<any[]>('/api/admin/users')
+  },
+}
+

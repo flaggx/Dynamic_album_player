@@ -1,10 +1,11 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
+import { useIsAdmin } from '../utils/admin'
 import './Sidebar.css'
 
 const Sidebar = () => {
   const location = useLocation()
-  // const { user } = useAuth0() // Reserved for future use
+  const isAdmin = useIsAdmin()
 
   const isActive = (path: string) => location.pathname === path
 
@@ -59,6 +60,18 @@ const Sidebar = () => {
             <span className="nav-text">Liked Songs</span>
           </Link>
         </div>
+
+        {isAdmin && (
+          <div className="sidebar-section">
+            <div className="sidebar-section-header">
+              <span className="section-title">Admin</span>
+            </div>
+            <Link to="/admin" className={`nav-item ${isActive('/admin') ? 'active' : ''}`}>
+              <span className="nav-icon">⚙️</span>
+              <span className="nav-text">Admin Panel</span>
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   )

@@ -1,0 +1,209 @@
+.admin-container {
+  padding: 24px;
+  max-width: 1200px;
+}
+
+.admin-container h1 {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--spotify-white);
+}
+
+.admin-subtitle {
+  color: var(--spotify-light-gray);
+  margin-bottom: 32px;
+  font-size: 14px;
+}
+
+.admin-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--spotify-gray);
+}
+
+.admin-tab {
+  padding: 12px 24px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--spotify-light-gray);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.admin-tab:hover {
+  color: var(--spotify-white);
+}
+
+.admin-tab.active {
+  color: var(--spotify-white);
+  border-bottom-color: var(--spotify-green);
+}
+
+.admin-content {
+  margin-top: 24px;
+}
+
+.admin-loading {
+  text-align: center;
+  padding: 48px;
+  color: var(--spotify-light-gray);
+}
+
+.admin-empty {
+  text-align: center;
+  padding: 48px;
+  color: var(--spotify-light-gray);
+}
+
+.admin-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.admin-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background-color: var(--spotify-gray);
+  border-radius: 8px;
+  transition: background-color 0.2s;
+}
+
+.admin-item:hover {
+  background-color: #3e3e3e;
+}
+
+.admin-item-info {
+  flex: 1;
+}
+
+.admin-item-info h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: var(--spotify-white);
+}
+
+.admin-item-info p {
+  font-size: 14px;
+  color: var(--spotify-light-gray);
+  margin: 4px 0;
+}
+
+.admin-item-meta {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.admin-button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.admin-button.danger {
+  background-color: var(--spotify-red);
+  color: var(--spotify-white);
+}
+
+.admin-button.danger:hover:not(:disabled) {
+  background-color: #d32f2f;
+}
+
+.admin-button.success {
+  background-color: var(--spotify-green);
+  color: var(--spotify-white);
+}
+
+.admin-button.success:hover {
+  background-color: #1db954;
+}
+
+.admin-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.admin-search {
+  margin-bottom: 24px;
+}
+
+.admin-search-input {
+  width: 100%;
+  padding: 12px 16px;
+  background-color: var(--spotify-gray);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  color: var(--spotify-white);
+  font-size: 14px;
+}
+
+.admin-search-input:focus {
+  outline: none;
+  border-color: var(--spotify-green);
+  background-color: #3e3e3e;
+}
+
+.admin-search-input::placeholder {
+  color: var(--spotify-light-gray);
+}
+
+.admin-section {
+  margin-bottom: 32px;
+}
+
+.admin-section-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: var(--spotify-white);
+}
+
+.admin-item-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.admin-ban-form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.admin-ban-input {
+  padding: 8px 12px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  color: var(--spotify-white);
+  font-size: 14px;
+  width: 200px;
+}
+
+.admin-ban-input:focus {
+  outline: none;
+  border-color: var(--spotify-red);
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+.admin-ban-input::placeholder {
+  color: var(--spotify-light-gray);
+}
+
+.admin-item-meta.banned {
+  color: var(--spotify-red);
+  font-weight: 600;
+}
+

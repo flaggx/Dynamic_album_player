@@ -33,6 +33,10 @@ DEPLOYMENT.md
 CUSTOM_DOMAIN_SETUP.md
 BUILD_TROUBLESHOOTING.md
 CLOUDFLARE_DNS_SETUP.md
+ADMIN_SETUP.md
+FIND_AUTH0_API.md
+AUTH0_API_AUTHORIZATION.md
+AUTH0_ACTION_SETUP.md
 deploy.sh
 
 # Fly.io (optional - safe to commit, but can be ignored if preferred)
