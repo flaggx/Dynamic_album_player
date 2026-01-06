@@ -7,9 +7,17 @@ import './TopBar.css'
 
 const TopBar = () => {
   const navigate = useNavigate()
-  const { user } = useAuth0()
+  const { user, isAuthenticated, loginWithRedirect } = useAuth0()
   const { toggleSidebar } = useSidebar()
   const [searchQuery, setSearchQuery] = useState('')
+
+  const handleLogin = () => {
+    loginWithRedirect({
+      appState: {
+        returnTo: window.location.pathname,
+      },
+    })
+  }
 
   const handleBack = () => {
     navigate(-1)
@@ -68,7 +76,13 @@ const TopBar = () => {
         </form>
       </div>
       <div className="top-bar-right">
-        {user && <ProfileDropdown user={user} />}
+        {isAuthenticated && user ? (
+          <ProfileDropdown user={user} />
+        ) : (
+          <button className="login-button" onClick={handleLogin}>
+            Log in
+          </button>
+        )}
       </div>
     </div>
   )

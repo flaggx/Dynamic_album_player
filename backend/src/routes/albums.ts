@@ -6,6 +6,7 @@ import { db } from '../database/init.js'
 import { v4 as uuidv4 } from 'uuid'
 import { promisify } from 'util'
 import { authenticate, optionalAuth, getUserId, AuthRequest } from '../middleware/auth.js'
+import { requirePremium } from '../middleware/premium.js'
 import { CustomError } from '../middleware/errorHandler'
 
 const router = express.Router()
@@ -181,8 +182,8 @@ router.get('/artist/:artistId', optionalAuth, async (req, res, next) => {
   }
 })
 
-// Create album (requires authentication, supports cover image upload)
-router.post('/', authenticate, uploadCoverImage.single('coverImage'), async (req: AuthRequest, res, next) => {
+// Create album (requires authentication and premium subscription, supports cover image upload)
+router.post('/', authenticate, requirePremium, uploadCoverImage.single('coverImage'), async (req: AuthRequest, res, next) => {
   try {
     const userId = getUserId(req)
     if (!userId) {

@@ -38,6 +38,12 @@ export const initDatabase = (): Promise<void> => {
           banned INTEGER DEFAULT 0,
           banned_reason TEXT,
           banned_at DATETIME,
+          stripe_customer_id TEXT,
+          stripe_subscription_id TEXT,
+          subscription_status TEXT DEFAULT 'free',
+          subscription_tier TEXT DEFAULT 'free',
+          subscription_started_at DATETIME,
+          subscription_ends_at DATETIME,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
       `)
@@ -122,6 +128,21 @@ export const initDatabase = (): Promise<void> => {
         )
       `)
 
+      // Stripe events table (for webhook logging)
+      db.run(`
+        CREATE TABLE IF NOT EXISTS stripe_events (
+          id TEXT PRIMARY KEY,
+          event_type TEXT NOT NULL,
+          stripe_event_id TEXT UNIQUE NOT NULL,
+          user_id TEXT,
+          subscription_id TEXT,
+          data TEXT,
+          processed INTEGER DEFAULT 0,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+        )
+      `)
+
       // Create indexes
       db.run(`CREATE INDEX IF NOT EXISTS idx_albums_artist_id ON albums(artist_id)`)
       db.run(`CREATE INDEX IF NOT EXISTS idx_songs_album_id ON songs(album_id)`)
@@ -132,6 +153,8 @@ export const initDatabase = (): Promise<void> => {
       db.run(`CREATE INDEX IF NOT EXISTS idx_likes_song_id ON likes(song_id)`)
       db.run(`CREATE INDEX IF NOT EXISTS idx_favorites_user_id ON favorites(user_id)`)
       db.run(`CREATE INDEX IF NOT EXISTS idx_favorites_song_id ON favorites(song_id)`)
+      db.run(`CREATE INDEX IF NOT EXISTS idx_stripe_events_user_id ON stripe_events(user_id)`)
+      db.run(`CREATE INDEX IF NOT EXISTS idx_stripe_events_stripe_event_id ON stripe_events(stripe_event_id)`)
 
       console.log('✅ Database tables initialized')
       resolve()

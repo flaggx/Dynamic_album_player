@@ -63,3 +63,11 @@ export interface Favorite {
   createdAt: string
 }
 
+export interface PremiumStatus {
+  isPremium: boolean
+  subscriptionStatus: 'free' | 'active' | 'past_due' | 'canceled' | 'trialing'
+  subscriptionTier: 'free' | 'premium'
+  subscriptionEndsAt: string | null
+  stripeCustomerId: string | null
+}
+

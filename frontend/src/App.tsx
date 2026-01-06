@@ -5,6 +5,7 @@ import { Auth0Provider, useAuth0 } from '@auth0/auth0-react'
 import { PlayerProvider } from './contexts/PlayerContext'
 import { SidebarProvider } from './contexts/SidebarContext'
 import ProtectedRoute from './components/ProtectedRoute'
+import PublicRoute from './components/PublicRoute'
 import BottomPlayer from './components/BottomPlayer'
 import Home from './pages/Home'
 import Login from './pages/Login'
@@ -18,6 +19,7 @@ import Settings from './pages/Settings'
 import MyAlbums from './pages/MyAlbums'
 import MyFavorites from './pages/MyFavorites'
 import Admin from './pages/Admin'
+import Premium from './pages/Premium'
 import { setAuthTokenGetter } from './services/api'
 
 const domain = import.meta.env.VITE_AUTH0_DOMAIN
@@ -92,17 +94,17 @@ function App() {
         <Route
           path="/"
           element={
-            <ProtectedRoute>
+            <PublicRoute>
               <Home />
-            </ProtectedRoute>
+            </PublicRoute>
           }
         />
         <Route
           path="/discover"
           element={
-            <ProtectedRoute>
+            <PublicRoute>
               <Discover />
-            </ProtectedRoute>
+            </PublicRoute>
           }
         />
         <Route
@@ -124,9 +126,9 @@ function App() {
         <Route
           path="/album/:id"
           element={
-            <ProtectedRoute>
+            <PublicRoute>
               <AlbumDetail />
-            </ProtectedRoute>
+            </PublicRoute>
           }
         />
         <Route
@@ -140,9 +142,9 @@ function App() {
         <Route
           path="/profile/:userId"
           element={
-            <ProtectedRoute>
+            <PublicRoute>
               <Profile />
-            </ProtectedRoute>
+            </PublicRoute>
           }
         />
         <Route
@@ -174,6 +176,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Admin />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/premium"
+          element={
+            <ProtectedRoute>
+              <Premium />
             </ProtectedRoute>
           }
         />

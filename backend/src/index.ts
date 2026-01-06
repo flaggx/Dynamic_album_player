@@ -6,10 +6,13 @@ import albumRoutes from './routes/albums'
 import songRoutes from './routes/songs'
 import userRoutes from './routes/users'
 import subscriptionRoutes from './routes/subscriptions'
+import premiumRoutes from './routes/premium'
+import premiumWebhook from './routes/premium-webhook'
 import likeRoutes from './routes/likes'
 import favoriteRoutes from './routes/favorites'
 import adminRoutes from './routes/admin'
 import { initDatabase } from './database/init'
+import { migrateDatabase } from './database/migrate'
 import { errorHandler } from './middleware/errorHandler'
 
 dotenv.config()
@@ -22,6 +25,10 @@ app.use(cors({
   origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
   credentials: true
 }))
+
+// Stripe webhook needs raw body, so it must be before express.json()
+app.use('/api/premium/webhook', premiumWebhook)
+
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
@@ -33,6 +40,7 @@ app.use('/api/albums', albumRoutes)
 app.use('/api/songs', songRoutes)
 app.use('/api/users', userRoutes)
 app.use('/api/subscriptions', subscriptionRoutes)
+app.use('/api/premium', premiumRoutes)
 app.use('/api/likes', likeRoutes)
 app.use('/api/favorites', favoriteRoutes)
 app.use('/api/admin', adminRoutes)
@@ -64,16 +72,19 @@ app.get('/api/health', (req, res) => {
 // Error handling middleware (must be last)
 app.use(errorHandler)
 
-// Initialize database and start server
-initDatabase().then(() => {
-  app.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`)
-    console.log(`📁 Upload directory: ${path.join(process.cwd(), 'uploads')}`)
+// Initialize database, run migrations, and start server
+initDatabase()
+  .then(() => migrateDatabase())
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on http://localhost:${PORT}`)
+      console.log(`📁 Upload directory: ${path.join(process.cwd(), 'uploads')}`)
+    })
   })
-}).catch((error) => {
-  console.error('Failed to initialize database:', error)
-  process.exit(1)
-})
+  .catch((error) => {
+    console.error('Failed to initialize database:', error)
+    process.exit(1)
+  })
 
 export default app
 

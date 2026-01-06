@@ -7,6 +7,7 @@ import { db } from '../database/init'
 import { v4 as uuidv4 } from 'uuid'
 import { promisify } from 'util'
 import { authenticate, optionalAuth, getUserId, AuthRequest } from '../middleware/auth.js'
+import { requirePremium } from '../middleware/premium.js'
 import { CustomError } from '../middleware/errorHandler'
 
 const router = express.Router()
@@ -111,8 +112,8 @@ router.get('/:id', optionalAuth, async (req, res, next) => {
   }
 })
 
-// Create song with tracks (requires authentication)
-router.post('/', authenticate, upload.array('tracks'), async (req: AuthRequest, res, next) => {
+// Create song with tracks (requires authentication and premium subscription)
+router.post('/', authenticate, requirePremium, upload.array('tracks'), async (req: AuthRequest, res, next) => {
   try {
     const userId = getUserId(req)
     if (!userId) {

@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
 import { useIsAdmin } from '../utils/admin'
+import { premiumApi } from '../services/api'
+import { PremiumStatus } from '../types'
 import './ProfileDropdown.css'
 
 interface ProfileDropdownProps {
@@ -18,10 +20,24 @@ interface ProfileDropdownProps {
 const ProfileDropdown = ({ user }: ProfileDropdownProps) => {
   const [isOpen, setIsOpen] = useState(false)
   const [imageError, setImageError] = useState(false)
+  const [premiumStatus, setPremiumStatus] = useState<PremiumStatus | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
-  const { logout } = useAuth0()
+  const { logout, user: auth0User } = useAuth0()
   const isAdmin = useIsAdmin()
   // const navigate = useNavigate() // Reserved for future use
+
+  useEffect(() => {
+    const loadPremiumStatus = async () => {
+      if (!auth0User?.sub) return
+      try {
+        const status = await premiumApi.getStatus()
+        setPremiumStatus(status)
+      } catch (error) {
+        console.error('Error loading premium status:', error)
+      }
+    }
+    loadPremiumStatus()
+  }, [auth0User])
 
   // Helper function to get display name with fallbacks
   const getDisplayName = (): string => {
@@ -99,7 +115,12 @@ const ProfileDropdown = ({ user }: ProfileDropdownProps) => {
                 </div>
               )}
               <div className="dropdown-user-details">
-                <div className="dropdown-user-name">{displayName}</div>
+                <div className="dropdown-user-name">
+                  {displayName}
+                  {premiumStatus?.isPremium && (
+                    <span className="premium-badge-small">Premium</span>
+                  )}
+                </div>
                 <div className="dropdown-user-email">{user.email}</div>
               </div>
             </div>
@@ -135,6 +156,15 @@ const ProfileDropdown = ({ user }: ProfileDropdownProps) => {
           </Link>
 
           <div className="dropdown-divider"></div>
+
+          <Link
+            to="/premium"
+            className="dropdown-item"
+            onClick={() => setIsOpen(false)}
+          >
+            <span className="dropdown-icon premium-icon"></span>
+            <span>{premiumStatus?.isPremium ? 'Manage Premium' : 'Upgrade to Premium'}</span>
+          </Link>
 
           <Link
             to="/settings"

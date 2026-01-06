@@ -1,4 +1,4 @@
-import { Album, Song, Track, Subscription, Like, Favorite, User } from '../types'
+import { Album, Song, Track, Subscription, Like, Favorite, User, PremiumStatus } from '../types'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
@@ -389,6 +389,31 @@ export const adminApi = {
 
   getAllUsers: async (): Promise<any[]> => {
     return apiCall<any[]>('/api/admin/users')
+  },
+}
+
+// Premium API
+export const premiumApi = {
+  getStatus: async (): Promise<PremiumStatus> => {
+    return apiCall<PremiumStatus>('/api/premium/status')
+  },
+
+  createCheckoutSession: async (): Promise<{ sessionId: string; url: string }> => {
+    return apiCall<{ sessionId: string; url: string }>('/api/premium/create-checkout-session', {
+      method: 'POST',
+    })
+  },
+
+  createPortalSession: async (): Promise<{ url: string }> => {
+    return apiCall<{ url: string }>('/api/premium/create-portal-session', {
+      method: 'POST',
+    })
+  },
+
+  cancel: async (): Promise<{ message: string }> => {
+    return apiCall<{ message: string }>('/api/premium/cancel', {
+      method: 'POST',
+    })
   },
 }
 

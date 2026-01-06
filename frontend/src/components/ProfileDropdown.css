@@ -122,6 +122,21 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.premium-badge-small {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  background: linear-gradient(135deg, #1db954 0%, #1ed760 100%);
+  color: white;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .dropdown-user-email {
@@ -215,6 +230,13 @@
   background-repeat: no-repeat;
   background-position: center;
   background-size: 20px 20px;
+}
+
+.dropdown-icon.premium-icon {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 2L2 7l10 5 10-5-10-5z'/%3E%3Cpath d='M2 17l10 5 10-5M2 12l10 5 10-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 16px 16px;
 }
 
 .dropdown-item.logout-item:hover .dropdown-icon.logout-icon {

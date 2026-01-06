@@ -11,36 +11,49 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import './AlbumDetail.css'
 
 // Like button component
-const LikeButton = ({ songId, userId, onToggle }: { songId: string; userId: string; onToggle: (id: string) => void }) => {
+const LikeButton = ({ songId, userId, onToggle }: { songId: string; userId: string | undefined; onToggle: (id: string) => void }) => {
+  const { isAuthenticated, loginWithRedirect } = useAuth0()
   const [isLiked, setIsLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(0)
 
   useEffect(() => {
-    if (!userId) return
-    const loadLikeStatus = async () => {
+    // Always load count, but only load user's like status if authenticated
+    const loadData = async () => {
       try {
-        const [liked, count] = await Promise.all([
-          likesApi.check(userId, songId),
-          likesApi.getCount(songId),
-        ])
-        setIsLiked(liked)
+        const count = await likesApi.getCount(songId)
         setLikeCount(count)
+        
+        if (userId && isAuthenticated) {
+          const liked = await likesApi.check(userId, songId)
+          setIsLiked(liked)
+        }
       } catch (error) {
         console.error('Error loading like status:', error)
       }
     }
-    loadLikeStatus()
-  }, [userId, songId])
+    loadData()
+  }, [userId, songId, isAuthenticated])
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!isAuthenticated) {
+      loginWithRedirect({
+        appState: {
+          returnTo: window.location.pathname,
+        },
+      })
+      return
+    }
+    onToggle(songId)
+    setIsLiked(!isLiked)
+    setLikeCount(prev => isLiked ? prev - 1 : prev + 1)
+  }
 
   return (
     <button
-      onClick={(e) => {
-        e.stopPropagation()
-        onToggle(songId)
-        setIsLiked(!isLiked)
-        setLikeCount(prev => isLiked ? prev - 1 : prev + 1)
-      }}
+      onClick={handleClick}
       className={`action-button ${isLiked ? 'liked' : ''}`}
+      title={!isAuthenticated ? 'Log in to like songs' : ''}
     >
       ❤️ {likeCount}
     </button>
@@ -48,36 +61,49 @@ const LikeButton = ({ songId, userId, onToggle }: { songId: string; userId: stri
 }
 
 // Favorite button component
-const FavoriteButton = ({ songId, userId, onToggle }: { songId: string; userId: string; onToggle: (id: string) => void }) => {
+const FavoriteButton = ({ songId, userId, onToggle }: { songId: string; userId: string | undefined; onToggle: (id: string) => void }) => {
+  const { isAuthenticated, loginWithRedirect } = useAuth0()
   const [isFavorited, setIsFavorited] = useState(false)
   const [favoriteCount, setFavoriteCount] = useState(0)
 
   useEffect(() => {
-    if (!userId) return
-    const loadFavoriteStatus = async () => {
+    // Always load count, but only load user's favorite status if authenticated
+    const loadData = async () => {
       try {
-        const [favorited, count] = await Promise.all([
-          favoritesApi.check(userId, songId),
-          favoritesApi.getCount(songId),
-        ])
-        setIsFavorited(favorited)
+        const count = await favoritesApi.getCount(songId)
         setFavoriteCount(count)
+        
+        if (userId && isAuthenticated) {
+          const favorited = await favoritesApi.check(userId, songId)
+          setIsFavorited(favorited)
+        }
       } catch (error) {
         console.error('Error loading favorite status:', error)
       }
     }
-    loadFavoriteStatus()
-  }, [userId, songId])
+    loadData()
+  }, [userId, songId, isAuthenticated])
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!isAuthenticated) {
+      loginWithRedirect({
+        appState: {
+          returnTo: window.location.pathname,
+        },
+      })
+      return
+    }
+    onToggle(songId)
+    setIsFavorited(!isFavorited)
+    setFavoriteCount(prev => isFavorited ? prev - 1 : prev + 1)
+  }
 
   return (
     <button
-      onClick={(e) => {
-        e.stopPropagation()
-        onToggle(songId)
-        setIsFavorited(!isFavorited)
-        setFavoriteCount(prev => isFavorited ? prev - 1 : prev + 1)
-      }}
+      onClick={handleClick}
       className={`action-button ${isFavorited ? 'favorited' : ''}`}
+      title={!isAuthenticated ? 'Log in to favorite songs' : ''}
     >
       ⭐ {favoriteCount}
     </button>
@@ -87,7 +113,7 @@ const FavoriteButton = ({ songId, userId, onToggle }: { songId: string; userId: 
 const AlbumDetail = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { user } = useAuth0()
+  const { user, isAuthenticated, loginWithRedirect } = useAuth0()
   const { setCurrentSong } = usePlayer()
   
   const [album, setAlbum] = useState<Album | null>(null)
@@ -126,6 +152,14 @@ const AlbumDetail = () => {
   }, [id, navigate])
 
   const handleSubscribe = async () => {
+    if (!isAuthenticated) {
+      loginWithRedirect({
+        appState: {
+          returnTo: window.location.pathname,
+        },
+      })
+      return
+    }
     if (!user?.sub || !album) return
     try {
       await subscriptionsApi.subscribe(user.sub, album.artistId)
@@ -279,8 +313,8 @@ const AlbumDetail = () => {
                     </div>
                   </div>
                   <div className="song-actions">
-                    <LikeButton songId={song.id} userId={user?.sub || ''} onToggle={handleLike} />
-                    <FavoriteButton songId={song.id} userId={user?.sub || ''} onToggle={handleFavorite} />
+                    <LikeButton songId={song.id} userId={user?.sub} onToggle={handleLike} />
+                    <FavoriteButton songId={song.id} userId={user?.sub} onToggle={handleFavorite} />
                   </div>
                 </div>
               ))}

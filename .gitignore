@@ -38,6 +38,8 @@ FIND_AUTH0_API.md
 AUTH0_API_AUTHORIZATION.md
 AUTH0_ACTION_SETUP.md
 AUTH0_PRODUCTION_SETUP.md
+STRIPE_SETUP.md
+SECRETS_SETUP.md
 deploy.sh
 
 # Fly.io (optional - safe to commit, but can be ignored if preferred)

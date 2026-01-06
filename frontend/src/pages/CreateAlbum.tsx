@@ -1,17 +1,22 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
 import toast from 'react-hot-toast'
-import { albumsApi, songsApi } from '../services/api'
-import { Song } from '../types'
+import { albumsApi, songsApi, premiumApi } from '../services/api'
+import { Song, PremiumStatus } from '../types'
+import { useIsAdmin } from '../utils/admin'
 import Sidebar from '../components/Sidebar'
 import TopBar from '../components/TopBar'
 import LoadingSpinner from '../components/LoadingSpinner'
 import './CreateAlbum.css'
 
 const CreateAlbum = () => {
-  const { user } = useAuth0()
+  const { user, getAccessTokenSilently } = useAuth0()
   const navigate = useNavigate()
+  const isAdmin = useIsAdmin()
+  
+  const [premiumStatus, setPremiumStatus] = useState<PremiumStatus | null>(null)
+  const [isCheckingPremium, setIsCheckingPremium] = useState(true)
   
   const [albumTitle, setAlbumTitle] = useState('')
   const [albumDescription, setAlbumDescription] = useState('')
@@ -23,6 +28,26 @@ const CreateAlbum = () => {
     artist: string
     tracks: Array<{ name: string; file: File | null }>
   }>>([{ title: '', artist: '', tracks: [{ name: '', file: null }] }])
+
+  useEffect(() => {
+    const checkPremium = async () => {
+      if (!user?.sub) {
+        setIsCheckingPremium(false)
+        return
+      }
+
+      try {
+        const status = await premiumApi.getStatus()
+        setPremiumStatus(status)
+      } catch (error) {
+        console.error('Error checking premium status:', error)
+      } finally {
+        setIsCheckingPremium(false)
+      }
+    }
+
+    checkPremium()
+  }, [user])
 
   const addSong = () => {
     setSongs([...songs, { title: '', artist: '', tracks: [{ name: '', file: null }] }])
@@ -138,6 +163,45 @@ const CreateAlbum = () => {
       toast.error(`Error creating album: ${error instanceof Error ? error.message : 'Unknown error'}`, { id: loadingToast })
       setIsSubmitting(false)
     }
+  }
+
+  if (isCheckingPremium) {
+    return (
+      <div className="spotify-app">
+        <Sidebar />
+        <div className="main-content">
+          <TopBar />
+          <div className="content-area">
+            <LoadingSpinner />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!premiumStatus?.isPremium && !isAdmin) {
+    return (
+      <div className="spotify-app">
+        <Sidebar />
+        <div className="main-content">
+          <TopBar />
+          <div className="content-area">
+            <div className="create-album-container">
+              <div className="premium-required-banner">
+                <h2>Premium Required</h2>
+                <p>You need a premium subscription to create albums and upload songs.</p>
+                <p className="premium-banner-subtitle">
+                  Free users can listen to all albums but cannot upload content.
+                </p>
+                <Link to="/premium" className="premium-upgrade-button">
+                  Upgrade to Premium - $20/month
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (

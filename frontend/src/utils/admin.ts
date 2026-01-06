@@ -17,22 +17,40 @@ export const useIsAdmin = (): boolean => {
         // Get ID token claims which contain custom claims like roles
         const claims = await getIdTokenClaims()
         
+        // Debug: Log all claim keys to see what's available
+        if (claims) {
+          console.log('All claim keys:', Object.keys(claims))
+          console.log('Full claims object:', JSON.stringify(claims, null, 2))
+        }
+        
         // Check multiple possible locations for roles
         const roles = 
           claims?.['https://lostcampstudios.com/roles'] ||
           claims?.['https://lostcampstudios-api/roles'] ||
-          (user as any)['https://lostcampstudios.com/roles'] ||
-          (user as any)['https://lostcampstudios-api/roles'] ||
-          (user as any).roles ||
-          (user as any).permissions ||
+          claims?.roles ||
+          (user as any)?.['https://lostcampstudios.com/roles'] ||
+          (user as any)?.['https://lostcampstudios-api/roles'] ||
+          (user as any)?.roles ||
+          (user as any)?.permissions ||
           []
         
         // Debug logging
         console.log('ID Token Claims:', claims)
         console.log('User object:', user)
         console.log('Roles found:', roles)
+        console.log('Roles type:', typeof roles, 'Is array:', Array.isArray(roles))
         
-        const hasAdmin = Array.isArray(roles) && (roles.includes('admin') || roles.includes('Admin'))
+        // Check for admin role (case-insensitive)
+        let hasAdmin = false
+        if (Array.isArray(roles)) {
+          hasAdmin = roles.some(role => 
+            role?.toLowerCase() === 'admin' || 
+            role?.toLowerCase() === 'administrator'
+          )
+        } else if (typeof roles === 'string') {
+          hasAdmin = roles.toLowerCase().includes('admin')
+        }
+        
         console.log('Is admin?', hasAdmin)
         setIsAdmin(hasAdmin)
       } catch (error) {
