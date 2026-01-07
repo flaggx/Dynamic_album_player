@@ -23,31 +23,158 @@ const getBeatsPerBar = (timeSignature: '4/4' | '6/8' | '3/4' | '2/4'): number =>
   }
 }
 
+// Common chord progressions
+const CHORD_PROGRESSIONS: Array<{ name: string; progression: string[] }> = [
+  { name: 'I - IV - V - vi (Pop)', progression: ['I', 'IV', 'V', 'vi'] },
+  { name: 'ii - IV - V - iii', progression: ['ii', 'IV', 'V', 'iii'] },
+  { name: 'I - V - vi - IV (Pop)', progression: ['I', 'V', 'vi', 'IV'] },
+  { name: 'vi - IV - I - V (Pop)', progression: ['vi', 'IV', 'I', 'V'] },
+  { name: 'I - vi - IV - V (50s)', progression: ['I', 'vi', 'IV', 'V'] },
+  { name: 'I - IV - I - V', progression: ['I', 'IV', 'I', 'V'] },
+  { name: 'I - vi - ii - V (Jazz)', progression: ['I', 'vi', 'ii', 'V'] },
+  { name: 'ii - V - I (Jazz)', progression: ['ii', 'V', 'I'] },
+  { name: 'I - IV - vi - V', progression: ['I', 'IV', 'vi', 'V'] },
+  { name: 'I - iii - IV - V', progression: ['I', 'iii', 'IV', 'V'] },
+  { name: 'I - vi - iii - IV', progression: ['I', 'vi', 'iii', 'IV'] },
+  { name: 'vi - I - V - IV', progression: ['vi', 'I', 'V', 'IV'] },
+  { name: 'I - V - vi - iii - IV - I - IV - V', progression: ['I', 'V', 'vi', 'iii', 'IV', 'I', 'IV', 'V'] },
+  { name: 'I - bVII - IV - I', progression: ['I', 'bVII', 'IV', 'I'] },
+  { name: 'Custom', progression: [] }, // Placeholder for custom
+]
+
 // Bar Block Component - Each bar is a visual rectangle
 interface BarBlockProps {
   barNumber: number
   beatsPerBar: number
+  tempo: number
   text: string
   chords: Array<{ position: number; chord: string; voicing?: string }> // Position is relative to bar start
   barStartPosition: number // For display/calculation purposes only
   onTextChange: (text: string) => void
   onAddChord: (relativePosition: number, chord: string) => void // Position is relative to bar start
   onMoveChord: (oldPosition: number, newPosition: number) => void // Move chord to new position
+  onRemoveBar: () => void // Remove this bar
   availableChords: string[]
   songKey: string
   onChordHover: (chord: string, voicing: string, x: number, y: number) => void
   onChordLeave: () => void
 }
 
+// Metronome utility
+let audioContext: AudioContext | null = null
+let metronomeInterval: number | null = null
+let currentBarId: string | null = null
+
+const getAudioContext = async (): Promise<AudioContext> => {
+  if (!audioContext) {
+    audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+  }
+  // Resume context if suspended (required after user interaction)
+  if (audioContext.state === 'suspended') {
+    await audioContext.resume()
+  }
+  return audioContext
+}
+
+const playMetronomeClick = async (isFirstBeat: boolean = false) => {
+  try {
+    const ctx = await getAudioContext()
+    const oscillator = ctx.createOscillator()
+    const gainNode = ctx.createGain()
+    
+    oscillator.connect(gainNode)
+    gainNode.connect(ctx.destination)
+    
+    // Higher pitch for first beat, lower for others
+    oscillator.frequency.value = isFirstBeat ? 800 : 600
+    oscillator.type = 'sine'
+    
+    gainNode.gain.setValueAtTime(0.3, ctx.currentTime)
+    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1)
+    
+    oscillator.start(ctx.currentTime)
+    oscillator.stop(ctx.currentTime + 0.1)
+  } catch (error) {
+    console.error('Error playing metronome click:', error)
+  }
+}
+
+let currentOnComplete: (() => void) | null = null
+let currentBeatUpdate: ((beat: number) => void) | null = null
+
+const startMetronome = (
+  beatsPerBar: number, 
+  tempo: number, 
+  barId: string, 
+  onComplete: () => void,
+  onBeatUpdate: (beat: number) => void
+) => {
+  // Stop any existing metronome
+  if (metronomeInterval !== null) {
+    clearInterval(metronomeInterval)
+    metronomeInterval = null
+  }
+  
+  // Call previous onComplete if it exists
+  if (currentOnComplete) {
+    currentOnComplete()
+  }
+  
+  currentBarId = barId
+  currentOnComplete = onComplete
+  currentBeatUpdate = onBeatUpdate
+  const beatDuration = 60000 / tempo // milliseconds per beat
+  
+  // Store beatsPerBar in closure to ensure it's correct
+  const beatsPerBarValue = beatsPerBar
+  let beatCount = 0
+  
+  // Play first beat immediately
+  playMetronomeClick(true)
+  if (currentBeatUpdate) {
+    currentBeatUpdate(0)
+  }
+  beatCount = 1
+  
+  metronomeInterval = window.setInterval(() => {
+    const currentBeat = beatCount % beatsPerBarValue
+    const isFirstBeat = currentBeat === 0
+    
+    playMetronomeClick(isFirstBeat)
+    if (currentBeatUpdate) {
+      currentBeatUpdate(currentBeat)
+    }
+    beatCount++
+  }, beatDuration)
+}
+
+const stopMetronome = () => {
+  if (metronomeInterval !== null) {
+    clearInterval(metronomeInterval)
+    metronomeInterval = null
+  }
+  if (currentOnComplete) {
+    currentOnComplete()
+    currentOnComplete = null
+  }
+  if (currentBeatUpdate) {
+    currentBeatUpdate(-1) // Reset beat indicator
+    currentBeatUpdate = null
+  }
+  currentBarId = null
+}
+
 const BarBlock = ({
   barNumber,
   beatsPerBar,
+  tempo,
   text,
   chords,
   barStartPosition,
   onTextChange,
   onAddChord,
   onMoveChord,
+  onRemoveBar,
   availableChords,
   songKey,
   onChordHover,
@@ -59,6 +186,46 @@ const BarBlock = ({
   const [isDragOver, setIsDragOver] = useState(false)
   const [chordLineDragOver, setChordLineDragOver] = useState(false)
   const [draggedChordPosition, setDraggedChordPosition] = useState<number | null>(null)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [currentBeat, setCurrentBeat] = useState<number>(-1)
+  const barIdRef = useRef(`bar-${barNumber}-${Date.now()}`)
+  
+  useEffect(() => {
+    // Cleanup on unmount
+    return () => {
+      if (currentBarId === barIdRef.current) {
+        stopMetronome()
+      }
+    }
+  }, [])
+  
+  const handleMetronomePlay = () => {
+    if (isPlaying) {
+      // Stop if already playing
+      if (currentBarId === barIdRef.current) {
+        stopMetronome()
+        setIsPlaying(false)
+        setCurrentBeat(-1)
+      }
+    } else {
+      // Start playing
+      setIsPlaying(true)
+      startMetronome(
+        beatsPerBar, 
+        tempo, 
+        barIdRef.current, 
+        () => {
+          setIsPlaying(false)
+          setCurrentBeat(-1)
+        },
+        (beat: number) => {
+          if (currentBarId === barIdRef.current) {
+            setCurrentBeat(beat)
+          }
+        }
+      )
+    }
+  }
 
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newText = e.target.value
@@ -159,7 +326,37 @@ const BarBlock = ({
     <div className="bar-block">
       <div className="bar-block-header">
         <span className="bar-number-label">Bar {barNumber}</span>
-        <span className="bar-beats-label">{beatsPerBar} beats</span>
+        <div className="beat-indicators-row">
+          {Array.from({ length: beatsPerBar }).map((_, beatIdx) => (
+            <div
+              key={beatIdx}
+              className={`beat-indicator-dot ${currentBeat === beatIdx ? 'active' : ''} ${isPlaying ? 'visible' : ''}`}
+              title={`Beat ${beatIdx + 1}`}
+            >
+              {beatIdx + 1}
+            </div>
+          ))}
+        </div>
+        <div className="bar-header-actions">
+          <button
+            className={`metronome-play-btn ${isPlaying ? 'playing' : ''}`}
+            onClick={handleMetronomePlay}
+            title={isPlaying ? 'Stop metronome' : 'Play metronome for this bar'}
+          >
+            {isPlaying ? (
+              <span className="metronome-icon-stop">⏸</span>
+            ) : (
+              <span className="metronome-icon-play">▶</span>
+            )}
+          </button>
+          <button
+            className="bar-delete-btn"
+            onClick={onRemoveBar}
+            title="Delete this bar"
+          >
+            <span className="delete-icon"></span>
+          </button>
+        </div>
       </div>
       <div className="bar-block-content">
         {/* Chord line above text - draggable target */}
@@ -309,9 +506,15 @@ const BarBlock = ({
             {Array.from({ length: beatsPerBar }).map((_, beatIdx) => (
               <div
                 key={beatIdx}
-                className="beat-divider"
+                className={`beat-divider ${currentBeat === beatIdx ? 'active' : ''}`}
                 style={{ left: `${(beatIdx + 1) * (100 / beatsPerBar)}%` }}
-              />
+              >
+                {currentBeat === beatIdx && (
+                  <div className="beat-indicator">
+                    <div className="beat-indicator-pulse"></div>
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         </div>
@@ -447,38 +650,63 @@ const RenderedSongView = ({
               const sectionType = SECTION_TYPES.find(st => st.type === section.type)
               const bars = getBarsFromSection(section)
 
-              // Combine all bars into continuous lines for Ultimate Guitar style
-              const allLines: Array<{ chords: Array<{ position: number; chord: string; voicing?: string }>; text: string; barNumber: number }> = []
+              // Combine all bars into one continuous text flow for Ultimate Guitar style
+              // Only break at explicit newlines
+              // Preserve bar boundaries - don't add spaces, just concatenate
+              let combinedText = ''
+              const combinedChords: Array<{ position: number; chord: string; voicing?: string }> = []
+              let absolutePosition = 0
               
-              bars.forEach((bar) => {
+              bars.forEach((bar, barIndex) => {
                 const barText = bar.text || ''
-                const lines = barText.split('\n')
+                const barStart = absolutePosition
                 
-                lines.forEach((line, lineIdx) => {
-                  // Calculate where this line starts within the bar
-                  let lineStartInBar = 0
-                  for (let i = 0; i < lineIdx; i++) {
-                    lineStartInBar += lines[i].length + 1 // +1 for newline
-                  }
-                  const lineEndInBar = lineStartInBar + line.length
-                  
-                  // Get chords for this line (convert from bar-relative to line-relative)
-                  const lineChords = bar.chords
-                    .filter(c => c.position >= lineStartInBar && c.position < lineEndInBar)
-                    .map(c => ({
-                      ...c,
-                      position: c.position - lineStartInBar, // Convert to line-relative position
-                    }))
-                  
-                  // Add line if it has text or chords
-                  if (line || lineChords.length > 0) {
-                    allLines.push({
-                      chords: lineChords,
-                      text: line,
-                      barNumber: bar.barNumber,
-                    })
-                  }
+                // Add bar text to combined text (preserve newlines)
+                combinedText += barText
+                
+                // Add bar chords with absolute positions (relative to combined text)
+                bar.chords.forEach(chord => {
+                  combinedChords.push({
+                    ...chord,
+                    position: barStart + chord.position,
+                  })
                 })
+                
+                // Update absolute position to end of this bar's text
+                // Don't add spaces - just track where we are
+                absolutePosition = combinedText.length
+                
+                // Only add a newline between bars if the bar doesn't already end with one
+                // and it's not the last bar
+                if (barIndex < bars.length - 1 && barText && !barText.endsWith('\n')) {
+                  combinedText += '\n'
+                  absolutePosition = combinedText.length
+                }
+              })
+
+              // Split combined text only at explicit newlines
+              const lines = combinedText.split('\n')
+              const allLines: Array<{ chords: Array<{ position: number; chord: string; voicing?: string }>; text: string }> = []
+              
+              let lineStartPos = 0
+              lines.forEach((lineText) => {
+                const lineEndPos = lineStartPos + lineText.length
+                
+                // Get chords for this line (convert to line-relative positions)
+                const lineChords = combinedChords
+                  .filter(c => c.position >= lineStartPos && c.position < lineEndPos)
+                  .map(c => ({
+                    ...c,
+                    position: c.position - lineStartPos,
+                  }))
+                  .sort((a, b) => a.position - b.position)
+                
+                allLines.push({
+                  chords: lineChords,
+                  text: lineText.trim() || '\u00A0', // Use non-breaking space if empty
+                })
+                
+                lineStartPos = lineEndPos + 1 // +1 for the newline
               })
 
               // Calculate chars per bar for DAW grid
@@ -493,32 +721,78 @@ const RenderedSongView = ({
                       '--chars-per-bar': String(charsPerBar),
                     } as React.CSSProperties}
                   >
-                    {allLines.map((line, lineIdx) => (
-                      <div key={lineIdx} className="rendered-line">
-                        {line.chords && line.chords.length > 0 ? (
-                          <div className="rendered-chord-line">
-                            {line.chords.map((chordData, chordIdx) => {
-                              const prevChord = line.chords[chordIdx - 1]
-                              const spacing = chordIdx === 0 
-                                ? `${chordData.position}ch` 
-                                : `${chordData.position - (prevChord?.position || 0) + (formatChordName(prevChord?.chord || '').length || 0)}ch`
-                              return (
-                                <span
-                                  key={chordIdx}
-                                  className="rendered-chord"
-                                  style={{ marginLeft: spacing }}
-                                >
-                                  {formatChordName(chordData.chord)}
-                                </span>
-                              )
-                            })}
+                    {allLines.map((line, lineIdx) => {
+                      // Build chord and lyrics with perfect character alignment
+                      const text = line.text || ''
+                      const chords = line.chords || []
+                      
+                      // Sort chords by position
+                      const sortedChords = [...chords].sort((a, b) => a.position - b.position)
+                      
+                      // Build the chord line using the exact same text as spacing (invisible)
+                      // This ensures both lines wrap identically
+                      const chordLineElements: React.ReactNode[] = []
+                      
+                      // Start with the full text as invisible spacing
+                      // Then overlay chords at their positions
+                      let lastPos = 0
+                      
+                      sortedChords.forEach((chordData, chordIdx) => {
+                        const chordPos = Math.min(chordData.position, text.length)
+                        const chordName = formatChordName(chordData.chord)
+                        
+                        // Add invisible text from last position to chord position
+                        if (chordPos > lastPos) {
+                          const spacingText = text.substring(lastPos, chordPos)
+                          chordLineElements.push(
+                            <span key={`spacing-${chordIdx}`} className="rendered-spacing">
+                              {spacingText}
+                            </span>
+                          )
+                        }
+                        
+                        // Add the visible chord
+                        chordLineElements.push(
+                          <span key={`chord-${chordIdx}`} className="rendered-chord">
+                            {chordName}
+                          </span>
+                        )
+                        
+                        lastPos = chordPos
+                      })
+                      
+                      // Add remaining invisible text at the end
+                      if (lastPos < text.length) {
+                        const remainingText = text.substring(lastPos)
+                        chordLineElements.push(
+                          <span key="spacing-end" className="rendered-spacing">
+                            {remainingText}
+                          </span>
+                        )
+                      }
+                      
+                      // If no chords, still add invisible text to maintain structure
+                      if (sortedChords.length === 0 && text.length > 0) {
+                        chordLineElements.push(
+                          <span key="spacing-full" className="rendered-spacing">
+                            {text}
+                          </span>
+                        )
+                      }
+                      
+                      return (
+                        <div key={lineIdx} className="rendered-line">
+                          {chordLineElements.length > 0 && (
+                            <div className="rendered-chord-line">
+                              {chordLineElements}
+                            </div>
+                          )}
+                          <div className="rendered-lyrics-line">
+                            {text}
                           </div>
-                        ) : null}
-                        <div className="rendered-lyrics-line">
-                          {line.text || '\u00A0'}
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </div>
               )
@@ -777,6 +1051,31 @@ const Songwriting = () => {
     }
 
     updateSection(sectionId, { bars: updatedBars })
+  }
+
+  // Remove a bar from a section
+  const removeBarFromSection = (sectionId: string, barId: string) => {
+    const section = structure.find(s => s.id === sectionId)
+    if (!section) return
+
+    const sectionWithBars = ensureSectionHasBars(section)
+    const bars = sectionWithBars.bars || []
+    
+    // Don't allow removing the last bar - at least one bar must exist
+    if (bars.length <= 1) {
+      toast.error('Cannot remove the last bar. A section must have at least one bar.')
+      return
+    }
+
+    const updatedBars = bars.filter(b => b.id !== barId)
+    
+    // Renumber bars to maintain sequential order
+    const renumberedBars = updatedBars.map((bar, index) => ({
+      ...bar,
+      barNumber: index + 1,
+    }))
+
+    updateSection(sectionId, { bars: renumberedBars })
   }
 
   // Move chord to a new position within a bar
@@ -1208,11 +1507,11 @@ const Songwriting = () => {
   const charsPerBar = beatsPerBar * 4
 
   return (
-    <div className="spotify-app">
+    <div className="spotify-app" style={{ width: '100%', maxWidth: '100vw', overflowX: 'hidden', boxSizing: 'border-box' }}>
       <Sidebar />
-      <div className="main-content">
+      <div className="main-content" style={{ width: '100%', maxWidth: '100%', overflowX: 'hidden', boxSizing: 'border-box' }}>
         <TopBar />
-        <div className="content-area">
+        <div className="content-area" style={{ width: '100%', maxWidth: '100%', overflowX: 'hidden', boxSizing: 'border-box' }}>
         
         <div className="songwriting-header">
           <h1>Songwriting Helper</h1>
@@ -1366,6 +1665,29 @@ const Songwriting = () => {
                 <span className="drag-hint-icon">👉</span>
                 <strong>Tip:</strong> Drag chords from here into the chord line above each bar's text field. The chord will be placed where you drop it.
               </p>
+              <div className="chord-progression-selector">
+                <label>Select a Common Progression:</label>
+                <select
+                  value=""
+                  onChange={(e) => {
+                    const selected = CHORD_PROGRESSIONS.find(p => p.name === e.target.value)
+                    if (selected && selected.progression.length > 0) {
+                      setChordProgression([...selected.progression])
+                      toast.success(`Applied ${selected.name} progression`)
+                    }
+                    // Reset select to show placeholder
+                    e.target.value = ''
+                  }}
+                  className="progression-select"
+                >
+                  <option value="">Choose a progression...</option>
+                  {CHORD_PROGRESSIONS.filter(p => p.progression.length > 0).map((prog) => (
+                    <option key={prog.name} value={prog.name}>
+                      {prog.name} ({prog.progression.join(' - ')})
+                    </option>
+                  ))}
+                </select>
+              </div>
               <div className="chord-progression-list">
                 {chordProgression.map((chord, idx) => {
                   const actualChord = getChordFromProgression(key, chord)
@@ -1392,7 +1714,27 @@ const Songwriting = () => {
                       title="Drag me into a bar block!"
                     >
                       <span className="drag-handle" title="Drag handle">⋮⋮</span>
-                      <span className="chord-roman">{chord}</span>
+                      {ROMAN_NUMERALS.includes(chord) ? (
+                        <select
+                          className="chord-roman-select"
+                          value={chord}
+                          onChange={(e) => {
+                            const newProgression = [...chordProgression]
+                            newProgression[idx] = e.target.value
+                            setChordProgression(newProgression)
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          onMouseDown={(e) => e.stopPropagation()}
+                        >
+                          {ROMAN_NUMERALS.map(numeral => (
+                            <option key={numeral} value={numeral} title={numeral === 'vii°' ? 'Diminished 7th chord' : ''}>
+                              {numeral}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <span className="chord-roman">{chord}</span>
+                      )}
                       <span className="chord-name">{formatChordName(actualChord)}</span>
                       <button
                         className="remove-chord-btn"
@@ -1408,15 +1750,26 @@ const Songwriting = () => {
                     </div>
                   )
                 })}
-                <button
-                  className="add-chord-btn"
-                  onClick={() => {
-                    const newProgression = [...chordProgression, 'I']
-                    setChordProgression(newProgression)
-                  }}
-                >
-                  + Add Chord
-                </button>
+                <div className="add-chord-control">
+                  <select
+                    className="add-chord-select"
+                    value=""
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        const newProgression = [...chordProgression, e.target.value]
+                        setChordProgression(newProgression)
+                        e.target.value = '' // Reset select
+                      }
+                    }}
+                  >
+                    <option value="">+ Add Chord</option>
+                    {ROMAN_NUMERALS.map(numeral => (
+                      <option key={numeral} value={numeral} title={numeral === 'vii°' ? 'Diminished 7th chord' : ''}>
+                        {numeral} ({formatChordName(getChordFromProgression(key, numeral))})
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
 
@@ -1484,6 +1837,7 @@ const Songwriting = () => {
                                 key={bar.id}
                                 barNumber={bar.barNumber}
                                 beatsPerBar={beatsPerBar}
+                                tempo={tempo}
                                 text={bar.text}
                                 chords={bar.chords}
                                 barStartPosition={absoluteStart}
@@ -1501,6 +1855,9 @@ const Songwriting = () => {
                                   // Move chord within the bar
                                   moveChordInBar(section.id, bar.id, oldPosition, newPosition)
                                 }}
+                                onRemoveBar={() => {
+                                  removeBarFromSection(section.id, bar.id)
+                                }}
                                 availableChords={chordProgression}
                                 songKey={key}
                                 onChordHover={(chord, voicing, x, y) => setHoveredChord({ chord, voicing, x, y })}
@@ -1513,6 +1870,7 @@ const Songwriting = () => {
                             <BarBlock
                               barNumber={1}
                               beatsPerBar={beatsPerBar}
+                              tempo={tempo}
                               text=""
                               chords={[]}
                               barStartPosition={0}
@@ -1552,6 +1910,10 @@ const Songwriting = () => {
                                 if (bars.length > 0) {
                                   moveChordInBar(section.id, bars[0].id, oldPosition, newPosition)
                                 }
+                              }}
+                              onRemoveBar={() => {
+                                // Can't remove the only bar
+                                toast.error('Cannot remove the last bar. A section must have at least one bar.')
                               }}
                               availableChords={chordProgression}
                               songKey={key}
