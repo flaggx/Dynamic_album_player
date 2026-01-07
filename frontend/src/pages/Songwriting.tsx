@@ -1,0 +1,1717 @@
+import { useState, useEffect, useRef } from 'react'
+import { useNavigate, useParams, Link, useSearchParams } from 'react-router-dom'
+import { useAuth0 } from '@auth0/auth0-react'
+import toast from 'react-hot-toast'
+import { songwritingApi, premiumApi } from '../services/api'
+import { SongwritingSong, SongSection, SongSectionType, PremiumStatus, Bar } from '../types'
+import { useIsAdmin } from '../utils/admin'
+import { MUSICAL_KEYS, ROMAN_NUMERALS, getChordFromProgression, getChordVoicings, generateChordTab, formatChordName } from '../utils/chords'
+import Sidebar from '../components/Sidebar'
+import TopBar from '../components/TopBar'
+import LoadingSpinner from '../components/LoadingSpinner'
+import './Songwriting.css'
+import { v4 as uuidv4 } from 'uuid'
+
+// Calculate beats per bar from time signature
+const getBeatsPerBar = (timeSignature: '4/4' | '6/8' | '3/4' | '2/4'): number => {
+  switch (timeSignature) {
+    case '4/4': return 4
+    case '6/8': return 6
+    case '3/4': return 3
+    case '2/4': return 2
+    default: return 4
+  }
+}
+
+// Bar Block Component - Each bar is a visual rectangle
+interface BarBlockProps {
+  barNumber: number
+  beatsPerBar: number
+  text: string
+  chords: Array<{ position: number; chord: string; voicing?: string }> // Position is relative to bar start
+  barStartPosition: number // For display/calculation purposes only
+  onTextChange: (text: string) => void
+  onAddChord: (relativePosition: number, chord: string) => void // Position is relative to bar start
+  onMoveChord: (oldPosition: number, newPosition: number) => void // Move chord to new position
+  availableChords: string[]
+  songKey: string
+  onChordHover: (chord: string, voicing: string, x: number, y: number) => void
+  onChordLeave: () => void
+}
+
+const BarBlock = ({
+  barNumber,
+  beatsPerBar,
+  text,
+  chords,
+  barStartPosition,
+  onTextChange,
+  onAddChord,
+  onMoveChord,
+  availableChords,
+  songKey,
+  onChordHover,
+  onChordLeave,
+}: BarBlockProps) => {
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const [selectedChord, setSelectedChord] = useState('')
+  const [cursorPosition, setCursorPosition] = useState(0)
+  const [isDragOver, setIsDragOver] = useState(false)
+  const [chordLineDragOver, setChordLineDragOver] = useState(false)
+  const [draggedChordPosition, setDraggedChordPosition] = useState<number | null>(null)
+
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newText = e.target.value
+    onTextChange(newText)
+    setCursorPosition(e.target.selectionStart)
+  }
+
+  const handleChordSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    if (e.target.value && cursorPosition >= 0) {
+      const actualChord = getChordFromProgression(songKey, e.target.value)
+      onAddChord(cursorPosition, actualChord) // Pass relative position
+      setSelectedChord('')
+      e.target.value = ''
+    }
+  }
+
+  const handleTextClick = (e: React.MouseEvent<HTMLTextAreaElement>) => {
+    const textarea = e.currentTarget
+    // Use setTimeout to ensure selectionStart is updated after click
+    setTimeout(() => {
+      setCursorPosition(textarea.selectionStart)
+    }, 0)
+  }
+  
+  const handleTextFocus = (e: React.FocusEvent<HTMLTextAreaElement>) => {
+    const textarea = e.currentTarget
+    setCursorPosition(textarea.selectionStart)
+  }
+
+  // Drag and drop handlers
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragOver(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragOver(false)
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragOver(false)
+    
+    // Try to get chord from dataTransfer
+    let chord: string | null = null
+    
+    // Try JSON first
+    const chordData = e.dataTransfer.getData('application/json')
+    if (chordData) {
+      try {
+        const parsed = JSON.parse(chordData)
+        chord = parsed.chord
+      } catch (error) {
+        console.error('Error parsing chord data:', error)
+      }
+    }
+    
+    // Fallback to text/plain
+    if (!chord) {
+      chord = e.dataTransfer.getData('text/plain')
+    }
+    
+    if (chord) {
+      const actualChord = getChordFromProgression(songKey, chord)
+      const textarea = textareaRef.current
+      
+      if (textarea) {
+        // Use the textarea's current cursor position or selection
+        // This is more accurate than trying to calculate from mouse coordinates
+        const dropPosition = textarea.selectionStart || cursorPosition
+        
+        // If there's a selection, use the start of the selection
+        if (textarea.selectionStart !== textarea.selectionEnd) {
+          // User has text selected, place chord at start of selection
+          onAddChord(textarea.selectionStart, actualChord)
+        } else {
+          // No selection, use cursor position
+          onAddChord(dropPosition, actualChord)
+        }
+        
+        toast.success(`Added ${formatChordName(actualChord)}`)
+      } else {
+        // Fallback: add at cursor position
+        onAddChord(cursorPosition, actualChord)
+        toast.success(`Added ${formatChordName(actualChord)}`)
+      }
+    }
+  }
+
+  // Chords are already relative to bar start
+  const barChords = [...chords].sort((a, b) => a.position - b.position)
+
+  return (
+    <div className="bar-block">
+      <div className="bar-block-header">
+        <span className="bar-number-label">Bar {barNumber}</span>
+        <span className="bar-beats-label">{beatsPerBar} beats</span>
+      </div>
+      <div className="bar-block-content">
+        {/* Chord line above text - draggable target */}
+        <div 
+          className={`bar-chord-line ${chordLineDragOver ? 'drag-over' : ''}`}
+          onDragOver={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            setChordLineDragOver(true)
+          }}
+          onDragLeave={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            setChordLineDragOver(false)
+          }}
+          onDrop={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            setChordLineDragOver(false)
+            
+            // Check if this is a chord being moved
+            const chordData = e.dataTransfer.getData('application/json')
+            if (chordData) {
+              try {
+                const parsed = JSON.parse(chordData)
+                if (parsed.type === 'move-chord') {
+                  // Moving an existing chord
+                  const chordLine = e.currentTarget
+                  const rect = chordLine.getBoundingClientRect()
+                  const x = e.clientX - rect.left
+                  
+                  // Estimate character position (monospace font, ~8px per char)
+                  const charWidth = 8
+                  const newPos = Math.max(0, Math.min(text.length, Math.floor(x / charWidth)))
+                  
+                  onMoveChord(parsed.position, newPos)
+                  setDraggedChordPosition(null)
+                  return
+                } else if (parsed.chord) {
+                  // Adding a new chord from progression
+                  const actualChord = getChordFromProgression(songKey, parsed.chord)
+                  const chordLine = e.currentTarget
+                  const rect = chordLine.getBoundingClientRect()
+                  const x = e.clientX - rect.left
+                  
+                  const charWidth = 8
+                  const estimatedPos = Math.max(0, Math.min(text.length, Math.floor(x / charWidth)))
+                  
+                  onAddChord(estimatedPos, actualChord)
+                  toast.success(`Added ${formatChordName(actualChord)}`)
+                  return
+                }
+              } catch (error) {
+                console.error('Error parsing chord data:', error)
+              }
+            }
+            
+            // Fallback: try text/plain
+            const chord = e.dataTransfer.getData('text/plain')
+            if (chord) {
+              const actualChord = getChordFromProgression(songKey, chord)
+              const chordLine = e.currentTarget
+              const rect = chordLine.getBoundingClientRect()
+              const x = e.clientX - rect.left
+              
+              const charWidth = 8
+              const estimatedPos = Math.max(0, Math.min(text.length, Math.floor(x / charWidth)))
+              
+              onAddChord(estimatedPos, actualChord)
+              toast.success(`Added ${formatChordName(actualChord)}`)
+            }
+          }}
+        >
+          {barChords.length > 0 ? (
+            barChords.map((chordData, idx) => {
+              const voicings = getChordVoicings(chordData.chord)
+              const voicing = voicings.find(v => v.name === chordData.voicing) || voicings[0]
+              const prevChord = barChords[idx - 1]
+              const spacing = idx === 0 
+                ? `${chordData.position}ch` 
+                : `${chordData.position - (prevChord?.position || 0) + (formatChordName(prevChord?.chord || '').length || 0)}ch`
+              const isDragging = draggedChordPosition === chordData.position
+              return (
+                <span
+                  key={idx}
+                  className={`bar-chord-mark ${isDragging ? 'dragging' : ''}`}
+                  style={{ marginLeft: spacing }}
+                  draggable
+                  onDragStart={(e) => {
+                    setDraggedChordPosition(chordData.position)
+                    e.dataTransfer.effectAllowed = 'move'
+                    e.dataTransfer.setData('application/json', JSON.stringify({ 
+                      type: 'move-chord',
+                      position: chordData.position 
+                    }))
+                    if (e.currentTarget instanceof HTMLElement) {
+                      e.currentTarget.style.opacity = '0.5'
+                    }
+                  }}
+                  onDragEnd={(e) => {
+                    setDraggedChordPosition(null)
+                    if (e.currentTarget instanceof HTMLElement) {
+                      e.currentTarget.style.opacity = '1'
+                    }
+                  }}
+                  onMouseEnter={(e) => {
+                    if (voicing) {
+                      onChordHover(chordData.chord, chordData.voicing || 'Open', e.clientX, e.clientY)
+                    }
+                  }}
+                  onMouseLeave={onChordLeave}
+                >
+                  {formatChordName(chordData.chord)}
+                  {chordData.voicing && chordData.voicing !== 'Open' && (
+                    <span className="voicing-label">{chordData.voicing}</span>
+                  )}
+                </span>
+              )
+            })
+          ) : (
+            <span className="chord-line-placeholder">Drop chords here</span>
+          )}
+        </div>
+        {/* Text input */}
+        <div className="bar-text-wrapper">
+          <textarea
+            ref={textareaRef}
+            className="bar-text-input"
+            value={text}
+            onChange={handleTextChange}
+            onClick={handleTextClick}
+            onFocus={handleTextFocus}
+            onSelect={(e) => {
+              const target = e.target as HTMLTextAreaElement
+              setCursorPosition(target.selectionStart)
+            }}
+            onKeyUp={(e) => {
+              const target = e.target as HTMLTextAreaElement
+              setCursorPosition(target.selectionStart)
+            }}
+            placeholder={`Enter lyrics for bar ${barNumber}...`}
+            rows={2}
+            spellCheck={false}
+          />
+          {/* Beat dividers */}
+          <div className="bar-beat-dividers">
+            {Array.from({ length: beatsPerBar }).map((_, beatIdx) => (
+              <div
+                key={beatIdx}
+                className="beat-divider"
+                style={{ left: `${(beatIdx + 1) * (100 / beatsPerBar)}%` }}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="bar-block-footer">
+        <select
+          className="bar-chord-selector"
+          value={selectedChord}
+          onChange={handleChordSelect}
+        >
+          <option value="">Add chord at cursor...</option>
+          {availableChords.map((chord) => {
+            const actualChord = getChordFromProgression(songKey, chord)
+            return (
+              <option key={chord} value={chord}>
+                {chord} ({formatChordName(actualChord)})
+              </option>
+            )
+          })}
+        </select>
+      </div>
+    </div>
+  )
+}
+
+// Rendered Song View Component - Improved preview
+interface RenderedSongViewProps {
+  title: string
+  authorFirstName: string
+  authorLastName: string
+  key: string
+  timeSignature: '4/4' | '6/8' | '3/4' | '2/4'
+  tempo: number
+  chordProgression: string[] | null
+  structure: SongSection[]
+  createdAt: string
+  onEdit: () => void
+}
+
+const RenderedSongView = ({
+  title,
+  authorFirstName,
+  authorLastName,
+  key: songKey,
+  timeSignature,
+  tempo,
+  chordProgression,
+  structure,
+  createdAt,
+  onEdit,
+}: RenderedSongViewProps) => {
+  const copyrightYear = createdAt ? new Date(createdAt).getFullYear() : new Date().getFullYear()
+  const authorName = `${authorFirstName || ''} ${authorLastName || ''}`.trim() || 'Unknown Author'
+
+  const safeStructure = structure || []
+  const safeKey = songKey || 'C'
+  const safeTimeSignature = timeSignature || '4/4'
+  const safeTitle = title || 'Untitled Song'
+
+  const beatsPerBar = getBeatsPerBar(safeTimeSignature)
+
+  // Get bars from section (convert from lyrics if needed for backward compatibility)
+  // Only splits at explicit newlines - no automatic splitting
+  const getBarsFromSection = (section: SongSection): Bar[] => {
+    if (section.bars && section.bars.length > 0) {
+      return section.bars
+    }
+    
+    // Backward compatibility: convert lyrics to bars (only split at newlines)
+    const bars: Bar[] = []
+    const lyrics = section.lyrics || ''
+    const chords = section.chords || []
+    
+    // If lyrics is empty, create one empty bar
+    if (!lyrics || lyrics.trim() === '') {
+      bars.push({
+        id: `bar-${section.id}-1`,
+        barNumber: 1,
+        text: '',
+        chords: [],
+      })
+      return bars
+    }
+    
+    // Split only at newlines - each line becomes a bar
+    const lines = lyrics.split('\n')
+    let absolutePosition = 0
+    
+    lines.forEach((line, lineIndex) => {
+      const lineStart = absolutePosition
+      const lineEnd = absolutePosition + line.length
+      const lineChords = chords
+        .filter(c => c.position >= lineStart && c.position < lineEnd)
+        .map(c => ({ ...c, position: c.position - lineStart }))
+      
+      bars.push({
+        id: `bar-${section.id}-${lineIndex + 1}`,
+        barNumber: lineIndex + 1,
+        text: line,
+        chords: lineChords,
+      })
+      
+      absolutePosition = lineEnd + 1 // +1 for the newline character
+    })
+
+    return bars
+  }
+
+  return (
+    <div className="rendered-song-view">
+      <div className="rendered-song-header">
+        <h1>{safeTitle}</h1>
+        <div className="song-metadata">
+          <span>Key: {formatChordName(safeKey)}</span>
+          <span>Time: {safeTimeSignature}</span>
+          <span>Tempo: {tempo} BPM</span>
+        </div>
+        <button className="edit-button" onClick={onEdit}>
+          <span className="edit-icon"></span>
+          Edit
+        </button>
+      </div>
+
+      <div className="rendered-song-content">
+        {safeStructure.length === 0 ? (
+          <div className="empty-song-message">
+            <p>No sections added yet. Switch to edit mode to add sections.</p>
+          </div>
+        ) : (
+          safeStructure
+            .sort((a, b) => (a.order || 0) - (b.order || 0))
+            .map((section) => {
+              const sectionType = SECTION_TYPES.find(st => st.type === section.type)
+              const bars = getBarsFromSection(section)
+
+              // Combine all bars into continuous lines for Ultimate Guitar style
+              const allLines: Array<{ chords: Array<{ position: number; chord: string; voicing?: string }>; text: string; barNumber: number }> = []
+              
+              bars.forEach((bar) => {
+                const barText = bar.text || ''
+                const lines = barText.split('\n')
+                
+                lines.forEach((line, lineIdx) => {
+                  // Calculate where this line starts within the bar
+                  let lineStartInBar = 0
+                  for (let i = 0; i < lineIdx; i++) {
+                    lineStartInBar += lines[i].length + 1 // +1 for newline
+                  }
+                  const lineEndInBar = lineStartInBar + line.length
+                  
+                  // Get chords for this line (convert from bar-relative to line-relative)
+                  const lineChords = bar.chords
+                    .filter(c => c.position >= lineStartInBar && c.position < lineEndInBar)
+                    .map(c => ({
+                      ...c,
+                      position: c.position - lineStartInBar, // Convert to line-relative position
+                    }))
+                  
+                  // Add line if it has text or chords
+                  if (line || lineChords.length > 0) {
+                    allLines.push({
+                      chords: lineChords,
+                      text: line,
+                      barNumber: bar.barNumber,
+                    })
+                  }
+                })
+              })
+
+              // Calculate chars per bar for DAW grid
+              const charsPerBar = beatsPerBar * 4
+              
+              return (
+                <div key={section.id} className="rendered-section">
+                  <h3 className="section-label">[{sectionType?.label || section.type}]</h3>
+                  <div 
+                    className="rendered-lines-container"
+                    style={{
+                      '--chars-per-bar': String(charsPerBar),
+                    } as React.CSSProperties}
+                  >
+                    {allLines.map((line, lineIdx) => (
+                      <div key={lineIdx} className="rendered-line">
+                        {line.chords && line.chords.length > 0 ? (
+                          <div className="rendered-chord-line">
+                            {line.chords.map((chordData, chordIdx) => {
+                              const prevChord = line.chords[chordIdx - 1]
+                              const spacing = chordIdx === 0 
+                                ? `${chordData.position}ch` 
+                                : `${chordData.position - (prevChord?.position || 0) + (formatChordName(prevChord?.chord || '').length || 0)}ch`
+                              return (
+                                <span
+                                  key={chordIdx}
+                                  className="rendered-chord"
+                                  style={{ marginLeft: spacing }}
+                                >
+                                  {formatChordName(chordData.chord)}
+                                </span>
+                              )
+                            })}
+                          </div>
+                        ) : null}
+                        <div className="rendered-lyrics-line">
+                          {line.text || '\u00A0'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            })
+        )}
+      </div>
+
+      <div className="rendered-song-footer">
+        <div className="copyright">
+          © {copyrightYear} {authorName}. All rights reserved.
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const SECTION_TYPES: { type: SongSectionType; label: string }[] = [
+  { type: 'intro', label: 'Intro' },
+  { type: 'verse', label: 'Verse' },
+  { type: 'pre-chorus', label: 'Pre-Chorus' },
+  { type: 'chorus', label: 'Chorus' },
+  { type: 'bridge', label: 'Bridge' },
+  { type: 'outro', label: 'Outro' },
+]
+
+const TIME_SIGNATURES: ('4/4' | '6/8' | '3/4' | '2/4')[] = ['4/4', '6/8', '3/4', '2/4']
+
+const Songwriting = () => {
+  const { user, isAuthenticated } = useAuth0()
+  const navigate = useNavigate()
+  const { id } = useParams<{ id?: string }>()
+  const isAdmin = useIsAdmin()
+  
+  const [premiumStatus, setPremiumStatus] = useState<PremiumStatus | null>(null)
+  const [isCheckingPremium, setIsCheckingPremium] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  
+  const [title, setTitle] = useState('')
+  const [authorFirstName, setAuthorFirstName] = useState('')
+  const [authorLastName, setAuthorLastName] = useState('')
+  const [key, setKey] = useState('C')
+  const [timeSignature, setTimeSignature] = useState<'4/4' | '6/8' | '3/4' | '2/4'>('4/4')
+  const [tempo, setTempo] = useState<number>(120)
+  const [chordProgression, setChordProgression] = useState<string[]>(['I', 'IV', 'V', 'vi'])
+  const [structure, setStructure] = useState<SongSection[]>([])
+  const [isPublic, setIsPublic] = useState(false)
+  const [viewMode, setViewMode] = useState<'edit' | 'view'>('edit')
+  const [showModeModal, setShowModeModal] = useState(false)
+  const [hoveredChord, setHoveredChord] = useState<{ chord: string; voicing: string; x: number; y: number } | null>(null)
+  
+  const [draggedSection, setDraggedSection] = useState<SongSection | null>(null)
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
+  
+  const [savedSongs, setSavedSongs] = useState<SongwritingSong[]>([])
+  const [hasDraft, setHasDraft] = useState(false)
+
+  const DRAFT_STORAGE_KEY = 'songwriting_draft'
+  const searchParams = useSearchParams()[0]
+  const isPremium = premiumStatus?.isPremium || isAdmin
+
+  // Helper: Convert lyrics string to bars array
+  // Only splits at explicit newlines - no automatic splitting based on character count
+  // Users control bar boundaries manually (words can be sung faster/slower to fill bars)
+  const lyricsToBars = (lyrics: string, chords: Array<{ position: number; chord: string; voicing?: string }>, ts: '4/4' | '6/8' | '3/4' | '2/4' = timeSignature): Bar[] => {
+    const bars: Bar[] = []
+    
+    // If lyrics is empty, create one empty bar
+    if (!lyrics || lyrics.trim() === '') {
+      bars.push({
+        id: uuidv4(),
+        barNumber: 1,
+        text: '',
+        chords: [],
+      })
+      return bars
+    }
+    
+    // Split only at newlines - each line becomes a bar (or part of a bar)
+    const lines = lyrics.split('\n')
+    let currentBar = 1
+    let absolutePosition = 0
+    
+    lines.forEach((line, lineIndex) => {
+      // Get chords for this line (convert absolute positions to relative)
+      const lineStart = absolutePosition
+      const lineEnd = absolutePosition + line.length
+      const lineChords = chords
+        .filter(c => c.position >= lineStart && c.position < lineEnd)
+        .map(c => ({ ...c, position: c.position - lineStart }))
+      
+      bars.push({
+        id: uuidv4(),
+        barNumber: currentBar,
+        text: line,
+        chords: lineChords,
+      })
+      
+      absolutePosition = lineEnd + 1 // +1 for the newline character
+      currentBar++
+    })
+    
+    // If no bars were created (shouldn't happen, but safety check)
+    if (bars.length === 0) {
+      bars.push({
+        id: uuidv4(),
+        barNumber: 1,
+        text: lyrics,
+        chords: chords.map(c => ({ ...c, position: c.position })),
+      })
+    }
+
+    return bars
+  }
+
+  // Helper: Convert bars array to lyrics string and chords array
+  const barsToLyrics = (bars: Bar[]): { lyrics: string; chords: Array<{ position: number; chord: string; voicing?: string }> } => {
+    let lyrics = ''
+    const chords: Array<{ position: number; chord: string; voicing?: string }> = []
+    let absolutePosition = 0
+
+    bars.forEach((bar) => {
+      // Add bar text to lyrics
+      lyrics += bar.text
+      
+      // Convert relative chord positions to absolute positions
+      bar.chords.forEach((chord) => {
+        chords.push({
+          ...chord,
+          position: absolutePosition + chord.position,
+        })
+      })
+      
+      absolutePosition += bar.text.length
+    })
+
+    return { lyrics, chords }
+  }
+
+  // Ensure section has bars array (convert from lyrics if needed)
+  const ensureSectionHasBars = (section: SongSection): SongSection => {
+    if (section.bars && section.bars.length > 0) {
+      return section
+    }
+    
+    // Convert lyrics to bars
+    const bars = lyricsToBars(section.lyrics || '', section.chords || [], timeSignature)
+    return { ...section, bars }
+  }
+
+  // Add a new bar to a section
+  const addBarToSection = (sectionId: string) => {
+    const section = structure.find(s => s.id === sectionId)
+    if (!section) {
+      toast.error('Section not found')
+      return
+    }
+
+    const sectionWithBars = ensureSectionHasBars(section)
+    const newBar: Bar = {
+      id: uuidv4(),
+      barNumber: (sectionWithBars.bars?.length || 0) + 1,
+      text: '',
+      chords: [],
+    }
+    
+    updateSection(sectionId, { bars: [...(sectionWithBars.bars || []), newBar] })
+    toast.success('Bar added to section')
+  }
+
+  // Helper functions
+  const addSection = (type: SongSectionType) => {
+    const newBar: Bar = {
+      id: uuidv4(),
+      barNumber: 1,
+      text: '',
+      chords: [],
+    }
+    const newSection: SongSection = {
+      id: uuidv4(),
+      type,
+      order: structure.length,
+      lyrics: '', // Will be generated from bars when saving
+      chords: [], // Will be generated from bars when saving
+      bars: [newBar],
+    }
+    setStructure([...structure, newSection])
+  }
+
+  const updateSection = (sectionId: string, updates: Partial<SongSection>) => {
+    setStructure(structure.map(s => {
+      if (s.id === sectionId) {
+        const updated = { ...s, ...updates }
+        // If bars were updated, also update lyrics and chords for backward compatibility
+        if (updates.bars) {
+          const { lyrics, chords } = barsToLyrics(updates.bars)
+          updated.lyrics = lyrics
+          updated.chords = chords
+        }
+        return updated
+      }
+      return s
+    }))
+  }
+
+  const deleteSection = (sectionId: string) => {
+    if (window.confirm('Are you sure you want to delete this section?\n\n⚠️ WARNING: This action cannot be undone.')) {
+      const section = structure.find(s => s.id === sectionId)
+      setStructure(structure.filter(s => s.id !== sectionId).map((s, idx) => ({ ...s, order: idx })))
+      toast.success(`${section?.type || 'Section'} deleted`)
+    }
+  }
+
+  // Add chord to a specific bar in a section
+  const addChordToBar = (sectionId: string, barId: string, position: number, chord: string) => {
+    const section = structure.find(s => s.id === sectionId)
+    if (!section) return
+
+    const sectionWithBars = ensureSectionHasBars(section)
+    const bars = sectionWithBars.bars || []
+    const barIndex = bars.findIndex(b => b.id === barId)
+    if (barIndex === -1) return
+
+    const voicings = getChordVoicings(chord)
+    const defaultVoicing = voicings[0]?.name || 'Open'
+
+    const newChord = {
+      position, // Position is relative to bar start
+      chord,
+      voicing: defaultVoicing,
+    }
+
+    const updatedBars = [...bars]
+    updatedBars[barIndex] = {
+      ...updatedBars[barIndex],
+      chords: [...updatedBars[barIndex].chords, newChord].sort((a, b) => a.position - b.position),
+    }
+
+    updateSection(sectionId, { bars: updatedBars })
+  }
+
+  // Remove chord from a specific bar in a section
+  const removeChordFromBar = (sectionId: string, barId: string, position: number) => {
+    const section = structure.find(s => s.id === sectionId)
+    if (!section) return
+
+    const sectionWithBars = ensureSectionHasBars(section)
+    const bars = sectionWithBars.bars || []
+    const barIndex = bars.findIndex(b => b.id === barId)
+    if (barIndex === -1) return
+
+    const updatedBars = [...bars]
+    updatedBars[barIndex] = {
+      ...updatedBars[barIndex],
+      chords: updatedBars[barIndex].chords.filter(c => c.position !== position),
+    }
+
+    updateSection(sectionId, { bars: updatedBars })
+  }
+
+  // Move chord to a new position within a bar
+  const moveChordInBar = (sectionId: string, barId: string, oldPosition: number, newPosition: number) => {
+    const section = structure.find(s => s.id === sectionId)
+    if (!section) return
+
+    const sectionWithBars = ensureSectionHasBars(section)
+    const bars = sectionWithBars.bars || []
+    const barIndex = bars.findIndex(b => b.id === barId)
+    if (barIndex === -1) return
+
+    const updatedBars = [...bars]
+    const bar = updatedBars[barIndex]
+    const chordIndex = bar.chords.findIndex(c => c.position === oldPosition)
+    
+    if (chordIndex === -1) return
+
+    const updatedChords = [...bar.chords]
+    updatedChords[chordIndex] = {
+      ...updatedChords[chordIndex],
+      position: Math.max(0, Math.min(newPosition, bar.text.length)),
+    }
+    
+    // Sort chords by position
+    updatedChords.sort((a, b) => a.position - b.position)
+
+    updatedBars[barIndex] = {
+      ...bar,
+      chords: updatedChords,
+    }
+
+    updateSection(sectionId, { bars: updatedBars })
+  }
+
+  // Update chord voicing in a specific bar
+  const updateChordVoicingInBar = (sectionId: string, barId: string, position: number, voicing: string) => {
+    const section = structure.find(s => s.id === sectionId)
+    if (!section) return
+
+    const sectionWithBars = ensureSectionHasBars(section)
+    const bars = sectionWithBars.bars || []
+    const barIndex = bars.findIndex(b => b.id === barId)
+    if (barIndex === -1) return
+
+    const updatedBars = [...bars]
+    updatedBars[barIndex] = {
+      ...updatedBars[barIndex],
+      chords: updatedBars[barIndex].chords.map(c =>
+        c.position === position ? { ...c, voicing } : c
+      ),
+    }
+
+    updateSection(sectionId, { bars: updatedBars })
+  }
+
+  // Legacy functions for backward compatibility (convert to bar-based)
+  const addChordToSection = (sectionId: string, position: number, chord: string) => {
+    // This is called from BarBlock with absolute position
+    // We need to find which bar this position belongs to
+    const section = structure.find(s => s.id === sectionId)
+    if (!section) return
+
+    const sectionWithBars = ensureSectionHasBars(section)
+    const bars = sectionWithBars.bars || []
+    
+    // Find which bar contains this position
+    let currentPos = 0
+    for (let i = 0; i < bars.length; i++) {
+      const bar = bars[i]
+      const barEnd = currentPos + bar.text.length
+      
+      if (position >= currentPos && position < barEnd) {
+        // Position is within this bar
+        const relativePos = position - currentPos
+        addChordToBar(sectionId, bar.id, relativePos, chord)
+        return
+      }
+      
+      currentPos = barEnd
+    }
+    
+    // If position is beyond all bars, add to last bar
+    if (bars.length > 0) {
+      const lastBar = bars[bars.length - 1]
+      const relativePos = position - currentPos + lastBar.text.length
+      addChordToBar(sectionId, lastBar.id, relativePos, chord)
+    }
+  }
+
+  const removeChordFromSection = (sectionId: string, position: number) => {
+    const section = structure.find(s => s.id === sectionId)
+    if (!section) return
+
+    const sectionWithBars = ensureSectionHasBars(section)
+    const bars = sectionWithBars.bars || []
+    
+    // Find which bar contains this position
+    let currentPos = 0
+    for (let i = 0; i < bars.length; i++) {
+      const bar = bars[i]
+      const barEnd = currentPos + bar.text.length
+      
+      if (position >= currentPos && position < barEnd) {
+        const relativePos = position - currentPos
+        removeChordFromBar(sectionId, bar.id, relativePos)
+        return
+      }
+      
+      currentPos = barEnd
+    }
+  }
+
+  const updateChordVoicing = (sectionId: string, position: number, voicing: string) => {
+    const section = structure.find(s => s.id === sectionId)
+    if (!section) return
+
+    const sectionWithBars = ensureSectionHasBars(section)
+    const bars = sectionWithBars.bars || []
+    
+    // Find which bar contains this position
+    let currentPos = 0
+    for (let i = 0; i < bars.length; i++) {
+      const bar = bars[i]
+      const barEnd = currentPos + bar.text.length
+      
+      if (position >= currentPos && position < barEnd) {
+        const relativePos = position - currentPos
+        updateChordVoicingInBar(sectionId, bar.id, relativePos, voicing)
+        return
+      }
+      
+      currentPos = barEnd
+    }
+  }
+
+  // Local storage functions
+  const saveDraftToLocal = () => {
+    if (!title.trim()) return
+
+    const draft = {
+      title,
+      authorFirstName,
+      authorLastName,
+      key,
+      timeSignature,
+      tempo,
+      chordProgression,
+      structure,
+      isPublic,
+      savedAt: new Date().toISOString(),
+    }
+
+    try {
+      localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft))
+      setHasDraft(true)
+    } catch (error) {
+      console.error('Failed to save draft:', error)
+    }
+  }
+
+  const loadDraftFromLocal = (forceLoad = false) => {
+    try {
+      const draftStr = localStorage.getItem(DRAFT_STORAGE_KEY)
+      if (!draftStr) return false
+
+      const draft = JSON.parse(draftStr)
+      if (!draft || !draft.title) return false
+
+      if (forceLoad || window.confirm(`Load draft "${draft.title}"? This will replace your current work.`)) {
+        setTitle(draft.title || '')
+        setAuthorFirstName(draft.authorFirstName || '')
+        setAuthorLastName(draft.authorLastName || '')
+        setKey(draft.key || 'C')
+        setTimeSignature(draft.timeSignature || '4/4')
+        setTempo(draft.tempo || 120)
+        setChordProgression(draft.chordProgression || ['I', 'IV', 'V', 'vi'])
+        setStructure(draft.structure || [])
+        setIsPublic(draft.isPublic || false)
+        setHasDraft(true)
+        toast.success('Draft loaded')
+        return true
+      }
+    } catch (error) {
+      console.error('Failed to load draft:', error)
+    }
+    return false
+  }
+
+  const clearDraftFromLocal = () => {
+    localStorage.removeItem(DRAFT_STORAGE_KEY)
+    setHasDraft(false)
+  }
+
+  // Save/Load functions
+  const handleSave = async () => {
+    if (!isAuthenticated) {
+      saveDraftToLocal()
+      navigate('/login?returnTo=/songwriting')
+      return
+    }
+
+    if (!isPremium) {
+      saveDraftToLocal()
+      const returnTo = id ? `/songwriting/${id}` : '/songwriting'
+      navigate(`/premium?returnTo=${encodeURIComponent(returnTo)}`)
+      return
+    }
+
+    if (!title.trim() || !authorFirstName.trim() || !authorLastName.trim()) {
+      toast.error('Please fill in title and author name')
+      return
+    }
+
+    setIsSaving(true)
+    try {
+      // Convert bars to lyrics/chords for database storage
+      const structureForSave = structure.map(section => {
+        const sectionWithBars = ensureSectionHasBars(section)
+        const { lyrics, chords } = barsToLyrics(sectionWithBars.bars || [])
+        return {
+          ...section,
+          lyrics,
+          chords,
+          // Don't send bars to backend (it doesn't know about them yet)
+          bars: undefined,
+        }
+      })
+
+      const songData = {
+        title,
+        authorFirstName,
+        authorLastName,
+        key,
+        timeSignature,
+        tempo,
+        chordProgression,
+        structure: structureForSave,
+        isPublic,
+      }
+
+      if (id) {
+        await songwritingApi.update(id, songData)
+        toast.success('Song updated!')
+      } else {
+        const newSong = await songwritingApi.create(songData)
+        navigate(`/songwriting/${newSong.id}`)
+        toast.success('Song saved!')
+      }
+
+      clearDraftFromLocal()
+    } catch (error: any) {
+      console.error('Error saving song:', error)
+      toast.error(error.message || 'Failed to save song')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+
+  const loadSong = async (songId: string) => {
+    setIsLoading(true)
+    try {
+      const song = await songwritingApi.getById(songId)
+      setTitle(song.title)
+      setAuthorFirstName(song.authorFirstName)
+      setAuthorLastName(song.authorLastName)
+      setKey(song.key)
+      setTimeSignature(song.timeSignature)
+      setTempo(120) // Tempo not stored in database yet, default to 120
+      setChordProgression(song.chordProgression || ['I', 'IV', 'V', 'vi'])
+      
+      // Convert lyrics to bars for each section
+      const structureWithBars = (song.structure || []).map(section => {
+        return ensureSectionHasBars(section)
+      })
+      setStructure(structureWithBars)
+      
+      setIsPublic(song.isPublic || false)
+      clearDraftFromLocal()
+    } catch (error: any) {
+      console.error('Error loading song:', error)
+      toast.error(error.message || 'Failed to load song')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const deleteSong = async (songId: string) => {
+    if (!window.confirm('Are you sure you want to delete this song?\n\n⚠️ WARNING: This action cannot be undone. The song will be permanently deleted.')) {
+      return
+    }
+
+    try {
+      await songwritingApi.delete(songId)
+      toast.success('Song deleted')
+      if (id === songId) {
+        navigate('/songwriting')
+        setTitle('')
+        setAuthorFirstName('')
+        setAuthorLastName('')
+        setStructure([])
+      }
+    } catch (error: any) {
+      console.error('Error deleting song:', error)
+      toast.error(error.message || 'Failed to delete song')
+    }
+  }
+
+  // Check premium status
+  useEffect(() => {
+    const checkPremium = async () => {
+      if (!isAuthenticated) {
+        setIsCheckingPremium(false)
+        return
+      }
+
+      try {
+        const status = await premiumApi.getStatus()
+        setPremiumStatus(status)
+      } catch (error) {
+        console.error('Error checking premium status:', error)
+        setPremiumStatus({ isPremium: false, subscriptionStatus: 'free', subscriptionTier: 'free', subscriptionEndsAt: null, stripeCustomerId: null })
+      } finally {
+        setIsCheckingPremium(false)
+      }
+    }
+
+    checkPremium()
+  }, [isAuthenticated])
+
+  // Load song if ID is present
+  useEffect(() => {
+    if (id && isAuthenticated) {
+      loadSong(id)
+    } else if (!id) {
+      // Check for draft on mount
+      const draftStr = localStorage.getItem(DRAFT_STORAGE_KEY)
+      if (draftStr) {
+        try {
+          const draft = JSON.parse(draftStr)
+          if (draft && draft.title) {
+            setHasDraft(true)
+          }
+        } catch (e) {
+          // Ignore
+        }
+      }
+    }
+  }, [id, isAuthenticated])
+
+
+  // Auto-save draft
+  useEffect(() => {
+    if (!title.trim()) return
+
+    const timer = setTimeout(() => {
+      saveDraftToLocal()
+    }, 30000) // Auto-save every 30 seconds
+
+    return () => clearTimeout(timer)
+  }, [title, authorFirstName, authorLastName, key, timeSignature, tempo, chordProgression, structure, isPublic])
+
+  // Handle success/cancel from Stripe
+  useEffect(() => {
+    if (searchParams.get('success') === 'true') {
+      toast.success('Subscription successful! You can now save your songs.')
+      const returnTo = searchParams.get('returnTo')
+      if (returnTo) {
+        navigate(returnTo)
+      }
+    } else if (searchParams.get('canceled') === 'true') {
+      toast.error('Subscription canceled')
+    }
+  }, [searchParams, navigate])
+
+  // Drag and drop handlers
+  const handleDragStart = (e: React.DragEvent, section: SongSection) => {
+    setDraggedSection(section)
+    e.dataTransfer.effectAllowed = 'move'
+  }
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    setDragOverIndex(index)
+  }
+
+  const handleDrop = (e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault()
+    if (!draggedSection) return
+
+    const newStructure = [...structure]
+    const draggedIndex = newStructure.findIndex(s => s.id === draggedSection.id)
+    
+    if (draggedIndex === -1) return
+
+    newStructure.splice(draggedIndex, 1)
+    newStructure.splice(targetIndex, 0, draggedSection)
+    
+    const reordered = newStructure.map((s, idx) => ({ ...s, order: idx }))
+    setStructure(reordered)
+    setDraggedSection(null)
+    setDragOverIndex(null)
+  }
+
+  const handleDragEnd = () => {
+    setDraggedSection(null)
+    setDragOverIndex(null)
+  }
+
+  if (isLoading || isCheckingPremium) {
+    return (
+      <div className="spotify-app">
+        <Sidebar />
+        <div className="main-content">
+          <TopBar />
+          <div className="content-area">
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+              <LoadingSpinner />
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const beatsPerBar = getBeatsPerBar(timeSignature)
+  const charsPerBar = beatsPerBar * 4
+
+  return (
+    <div className="spotify-app">
+      <Sidebar />
+      <div className="main-content">
+        <TopBar />
+        <div className="content-area">
+        
+        <div className="songwriting-header">
+          <h1>Songwriting Helper</h1>
+          <div className="songwriting-controls">
+            <button
+              className="view-mode-button"
+              onClick={() => setShowModeModal(true)}
+            >
+              {viewMode === 'edit' ? (
+                <>
+                  <span className="view-icon-small"></span>
+                  View
+                </>
+              ) : (
+                <>
+                  <span className="edit-icon-small"></span>
+                  Edit
+                </>
+              )}
+            </button>
+            {viewMode === 'edit' && (
+              <>
+                {isAuthenticated && isPremium ? (
+                  <button
+                    className="save-button"
+                    onClick={handleSave}
+                    disabled={isSaving}
+                  >
+                    {isSaving ? 'Saving...' : id ? 'Update' : 'Save'}
+                  </button>
+                ) : isAuthenticated ? (
+                  <button
+                    className="save-button"
+                    onClick={handleSave}
+                  >
+                    Upgrade to Save
+                  </button>
+                ) : (
+                  <Link to="/login" className="login-button">
+                    Log in to Save
+                  </Link>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+
+        {viewMode === 'view' ? (
+          <RenderedSongView
+            title={title}
+            authorFirstName={authorFirstName}
+            authorLastName={authorLastName}
+            key={key}
+            timeSignature={timeSignature}
+            tempo={tempo}
+            chordProgression={chordProgression}
+            structure={structure}
+            createdAt={savedSongs.find(s => s.id === id)?.createdAt || new Date().toISOString()}
+            onEdit={() => setShowModeModal(true)}
+          />
+        ) : (
+          <div className="songwriting-form">
+            <div className="form-section">
+              <h2>Song Details</h2>
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Title *</label>
+                  <input
+                    type="text"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="Enter song title"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Author First Name *</label>
+                  <input
+                    type="text"
+                    value={authorFirstName}
+                    onChange={(e) => setAuthorFirstName(e.target.value)}
+                    placeholder="First name"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Author Last Name *</label>
+                  <input
+                    type="text"
+                    value={authorLastName}
+                    onChange={(e) => setAuthorLastName(e.target.value)}
+                    placeholder="Last name"
+                  />
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Key</label>
+                  <select value={key} onChange={(e) => setKey(e.target.value)}>
+                    {MUSICAL_KEYS.map(k => (
+                      <option key={k} value={k}>{formatChordName(k)}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Time Signature</label>
+                  <select
+                    value={timeSignature}
+                    onChange={(e) => setTimeSignature(e.target.value as any)}
+                  >
+                    {TIME_SIGNATURES.map(ts => (
+                      <option key={ts} value={ts}>{ts}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Tempo (BPM)</label>
+                  <div className="tempo-control">
+                    <button
+                      type="button"
+                      className="tempo-btn"
+                      onClick={() => setTempo(Math.max(60, tempo - 1))}
+                      aria-label="Decrease tempo"
+                    >
+                      ←
+                    </button>
+                    <input
+                      type="range"
+                      min="60"
+                      max="200"
+                      value={tempo}
+                      onChange={(e) => setTempo(parseInt(e.target.value))}
+                      className="tempo-slider"
+                    />
+                    <button
+                      type="button"
+                      className="tempo-btn"
+                      onClick={() => setTempo(Math.min(200, tempo + 1))}
+                      aria-label="Increase tempo"
+                    >
+                      →
+                    </button>
+                    <span className="tempo-value">{tempo}</span>
+                  </div>
+                  <span className="form-hint">Beats per minute - helps define bar timing</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="form-section">
+              <h2>Chord Progression (Roman Numerals)</h2>
+              <p className="section-hint">
+                <span className="drag-hint-icon">👉</span>
+                <strong>Tip:</strong> Drag chords from here into the chord line above each bar's text field. The chord will be placed where you drop it.
+              </p>
+              <div className="chord-progression-list">
+                {chordProgression.map((chord, idx) => {
+                  const actualChord = getChordFromProgression(key, chord)
+                  return (
+                    <div 
+                      key={idx} 
+                      className="chord-progression-item draggable-chord"
+                      draggable={true}
+                      onDragStart={(e) => {
+                        e.dataTransfer.effectAllowed = 'copy'
+                        e.dataTransfer.setData('application/json', JSON.stringify({ chord }))
+                        e.dataTransfer.setData('text/plain', chord)
+                        if (e.currentTarget instanceof HTMLElement) {
+                          e.currentTarget.style.opacity = '0.5'
+                          e.currentTarget.style.cursor = 'grabbing'
+                        }
+                      }}
+                      onDragEnd={(e) => {
+                        if (e.currentTarget instanceof HTMLElement) {
+                          e.currentTarget.style.opacity = '1'
+                          e.currentTarget.style.cursor = 'grab'
+                        }
+                      }}
+                      title="Drag me into a bar block!"
+                    >
+                      <span className="drag-handle" title="Drag handle">⋮⋮</span>
+                      <span className="chord-roman">{chord}</span>
+                      <span className="chord-name">{formatChordName(actualChord)}</span>
+                      <button
+                        className="remove-chord-btn"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          const newProgression = chordProgression.filter((_, i) => i !== idx)
+                          setChordProgression(newProgression)
+                        }}
+                        title="Remove chord"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  )
+                })}
+                <button
+                  className="add-chord-btn"
+                  onClick={() => {
+                    const newProgression = [...chordProgression, 'I']
+                    setChordProgression(newProgression)
+                  }}
+                >
+                  + Add Chord
+                </button>
+              </div>
+            </div>
+
+            <div className="form-section">
+              <h2>Song Structure</h2>
+              <div className="section-buttons">
+                {SECTION_TYPES.map(st => (
+                  <button
+                    key={st.type}
+                    className="add-section-btn"
+                    onClick={() => addSection(st.type)}
+                  >
+                    + {st.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="sections-list">
+                {structure
+                  .sort((a, b) => (a.order || 0) - (b.order || 0))
+                  .map((section, index) => {
+                    const sectionType = SECTION_TYPES.find(st => st.type === section.type)
+                    const sectionWithBars = ensureSectionHasBars(section)
+                    const bars = sectionWithBars.bars || []
+
+                    return (
+                      <div
+                        key={section.id}
+                        className={`section-editor ${dragOverIndex === index ? 'drag-over' : ''}`}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, section)}
+                        onDragOver={(e) => handleDragOver(e, index)}
+                        onDrop={(e) => handleDrop(e, index)}
+                        onDragEnd={handleDragEnd}
+                      >
+                        <div className="section-header">
+                          <h3>{sectionType?.label || section.type}</h3>
+                          <div className="section-header-actions">
+                            <button
+                              className="add-bar-btn"
+                              onClick={() => addBarToSection(section.id)}
+                              title="Add a new bar to this section"
+                            >
+                              + Add Bar
+                            </button>
+                            <button
+                              className="delete-section-btn"
+                              onClick={() => deleteSection(section.id)}
+                            >
+                              ×
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="bars-container">
+                          {bars.map((bar, barIdx) => {
+                            // Calculate absolute start position for this bar
+                            let absoluteStart = 0
+                            for (let i = 0; i < barIdx; i++) {
+                              absoluteStart += bars[i].text.length
+                            }
+
+                            return (
+                              <BarBlock
+                                key={bar.id}
+                                barNumber={bar.barNumber}
+                                beatsPerBar={beatsPerBar}
+                                text={bar.text}
+                                chords={bar.chords}
+                                barStartPosition={absoluteStart}
+                                onTextChange={(newText) => {
+                                  // Update the bar text directly
+                                  const updatedBars = [...bars]
+                                  updatedBars[barIdx] = { ...updatedBars[barIdx], text: newText }
+                                  updateSection(section.id, { bars: updatedBars })
+                                }}
+                                onAddChord={(position, chord) => {
+                                  // Position is relative to bar start, so use it directly
+                                  addChordToBar(section.id, bar.id, position, chord)
+                                }}
+                                onMoveChord={(oldPosition, newPosition) => {
+                                  // Move chord within the bar
+                                  moveChordInBar(section.id, bar.id, oldPosition, newPosition)
+                                }}
+                                availableChords={chordProgression}
+                                songKey={key}
+                                onChordHover={(chord, voicing, x, y) => setHoveredChord({ chord, voicing, x, y })}
+                                onChordLeave={() => setHoveredChord(null)}
+                              />
+                            )
+                          })}
+                          
+                          {bars.length === 0 && (
+                            <BarBlock
+                              barNumber={1}
+                              beatsPerBar={beatsPerBar}
+                              text=""
+                              chords={[]}
+                              barStartPosition={0}
+                              onTextChange={(newText) => {
+                                // Create first bar
+                                const newBar: Bar = {
+                                  id: uuidv4(),
+                                  barNumber: 1,
+                                  text: newText,
+                                  chords: [],
+                                }
+                                updateSection(section.id, { bars: [newBar] })
+                              }}
+                              onAddChord={(position, chord) => {
+                                // Ensure bar exists first
+                                const sectionWithBars = ensureSectionHasBars(section)
+                                const bars = sectionWithBars.bars || []
+                                if (bars.length === 0) {
+                                  const newBar: Bar = {
+                                    id: uuidv4(),
+                                    barNumber: 1,
+                                    text: '',
+                                    chords: [],
+                                  }
+                                  updateSection(section.id, { bars: [newBar] })
+                                  setTimeout(() => {
+                                    addChordToBar(section.id, newBar.id, position, chord)
+                                  }, 0)
+                                } else {
+                                  addChordToBar(section.id, bars[0].id, position, chord)
+                                }
+                              }}
+                              onMoveChord={(oldPosition, newPosition) => {
+                                // Move chord - bar should exist at this point
+                                const sectionWithBars = ensureSectionHasBars(section)
+                                const bars = sectionWithBars.bars || []
+                                if (bars.length > 0) {
+                                  moveChordInBar(section.id, bars[0].id, oldPosition, newPosition)
+                                }
+                              }}
+                              availableChords={chordProgression}
+                              songKey={key}
+                              onChordHover={(chord, voicing, x, y) => setHoveredChord({ chord, voicing, x, y })}
+                              onChordLeave={() => setHoveredChord(null)}
+                            />
+                          )}
+                        </div>
+
+                        {/* Show all chords in section (aggregated from all bars) */}
+                        {(() => {
+                          const allChords = bars.flatMap((bar, barIdx) => {
+                            let absoluteStart = 0
+                            for (let i = 0; i < barIdx; i++) {
+                              absoluteStart += bars[i].text.length
+                            }
+                            return bar.chords.map(c => ({
+                              ...c,
+                              absolutePosition: absoluteStart + c.position,
+                              barId: bar.id,
+                            }))
+                          })
+                          
+                          return allChords.length > 0 ? (
+                            <div className="section-chords">
+                              <label>Chords in this section:</label>
+                              <div className="chord-list">
+                                {allChords.map((chordData, chordIdx) => {
+                                  const voicings = getChordVoicings(chordData.chord)
+                                  return (
+                                    <div key={chordIdx} className="chord-item">
+                                      <span className="chord-name">{formatChordName(chordData.chord)}</span>
+                                      <select
+                                        value={chordData.voicing || 'Open'}
+                                        onChange={(e) => updateChordVoicingInBar(section.id, chordData.barId, chordData.position, e.target.value)}
+                                      >
+                                        {voicings.map(v => (
+                                          <option key={v.name} value={v.name}>{v.name}</option>
+                                        ))}
+                                      </select>
+                                      <button
+                                        className="remove-chord-btn"
+                                        onClick={() => removeChordFromBar(section.id, chordData.barId, chordData.position)}
+                                      >
+                                        ×
+                                      </button>
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          ) : null
+                        })()}
+                      </div>
+                    )
+                  })}
+              </div>
+            </div>
+
+            <div className="form-section">
+              <label className="privacy-toggle">
+                <input
+                  type="checkbox"
+                  checked={isPublic}
+                  onChange={(e) => setIsPublic(e.target.checked)}
+                />
+                <span>Make this song public</span>
+              </label>
+            </div>
+          </div>
+        )}
+
+        {hoveredChord && (
+          <div
+            className="chord-tooltip"
+            style={{
+              position: 'fixed',
+              left: `${hoveredChord.x + 10}px`,
+              top: `${hoveredChord.y + 10}px`,
+              zIndex: 1000,
+            }}
+          >
+            <div className="chord-tab">
+              <pre>{(() => {
+                const voicings = getChordVoicings(hoveredChord.chord)
+                const voicing = voicings.find(v => v.name === hoveredChord.voicing) || voicings[0]
+                return voicing ? generateChordTab(voicing) : 'No tab available'
+              })()}</pre>
+            </div>
+          </div>
+        )}
+
+        {showModeModal && (
+          <div className="mode-modal-overlay" onClick={() => setShowModeModal(false)}>
+            <div className="mode-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="mode-modal-header">
+                <h2>Switch Mode</h2>
+                <button className="mode-modal-close" onClick={() => setShowModeModal(false)}>×</button>
+              </div>
+              <div className="mode-modal-content">
+                <div className="current-mode-indicator">
+                  <span className="current-mode-label">Current Mode:</span>
+                  <span className={`current-mode-badge ${viewMode === 'edit' ? 'edit-active' : 'view-active'}`}>
+                    {viewMode === 'edit' ? (
+                      <>
+                        <span className="edit-icon-small"></span>
+                        Edit Mode
+                      </>
+                    ) : (
+                      <>
+                        <span className="view-icon-small"></span>
+                        View Mode
+                      </>
+                    )}
+                  </span>
+                </div>
+                <div className="mode-options">
+                  <button
+                    className={`mode-option ${viewMode === 'edit' ? 'active' : ''}`}
+                    onClick={() => {
+                      if (viewMode !== 'edit') {
+                        setViewMode('edit')
+                      }
+                      setShowModeModal(false)
+                    }}
+                    disabled={viewMode === 'edit'}
+                  >
+                    <span className="mode-icon edit-icon-modal"></span>
+                    <div className="mode-info">
+                      <h3>Edit Mode</h3>
+                      <p>Edit your song structure, chords, and lyrics</p>
+                      {viewMode === 'edit' && <span className="current-indicator">Currently Active</span>}
+                    </div>
+                  </button>
+                  <button
+                    className={`mode-option ${viewMode === 'view' ? 'active' : ''}`}
+                    onClick={() => {
+                      if (viewMode !== 'view') {
+                        setViewMode('view')
+                      }
+                      setShowModeModal(false)
+                    }}
+                    disabled={viewMode === 'view'}
+                  >
+                    <span className="mode-icon view-icon-modal"></span>
+                    <div className="mode-info">
+                      <h3>View Mode</h3>
+                      <p>View your song in a clean, readable format</p>
+                      {viewMode === 'view' && <span className="current-indicator">Currently Active</span>}
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default Songwriting
