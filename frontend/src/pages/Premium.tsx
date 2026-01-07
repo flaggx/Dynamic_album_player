@@ -22,14 +22,24 @@ const Premium = () => {
     // Check for success/cancel from Stripe redirect
     const success = searchParams.get('success')
     const canceled = searchParams.get('canceled')
+    const returnTo = searchParams.get('returnTo')
 
     if (success === 'true') {
       toast.success('Subscription activated! Welcome to Premium!')
-      // Remove query param
-      window.history.replaceState({}, '', '/premium')
+      // Redirect to returnTo if provided, otherwise stay on premium page
+      if (returnTo) {
+        window.location.href = returnTo + '?success=true&returnTo=' + encodeURIComponent(returnTo)
+      } else {
+        window.history.replaceState({}, '', '/premium')
+      }
     } else if (canceled === 'true') {
       toast.error('Subscription canceled')
-      window.history.replaceState({}, '', '/premium')
+      // Redirect back if returnTo provided
+      if (returnTo) {
+        window.location.href = returnTo
+      } else {
+        window.history.replaceState({}, '', '/premium')
+      }
     }
   }, [searchParams])
 
@@ -120,7 +130,8 @@ const Premium = () => {
 
     try {
       setIsProcessing(true)
-      const { url } = await premiumApi.createCheckoutSession()
+      const returnTo = searchParams.get('returnTo')
+      const { url } = await premiumApi.createCheckoutSession(returnTo || undefined)
       if (url) {
         window.location.href = url
       } else {

@@ -20,6 +20,7 @@ import MyAlbums from './pages/MyAlbums'
 import MyFavorites from './pages/MyFavorites'
 import Admin from './pages/Admin'
 import Premium from './pages/Premium'
+import Songwriting from './pages/Songwriting'
 import { setAuthTokenGetter } from './services/api'
 
 const domain = import.meta.env.VITE_AUTH0_DOMAIN
@@ -185,6 +186,22 @@ function App() {
             <ProtectedRoute>
               <Premium />
             </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/songwriting"
+          element={
+            <PublicRoute>
+              <Songwriting />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/songwriting/:id"
+          element={
+            <PublicRoute>
+              <Songwriting />
+            </PublicRoute>
           }
         />
         <Route path="*" element={<Navigate to="/" replace />} />

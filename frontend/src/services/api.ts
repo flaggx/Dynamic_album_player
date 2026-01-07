@@ -1,4 +1,4 @@
-import { Album, Song, Track, Subscription, Like, Favorite, User, PremiumStatus } from '../types'
+import { Album, Song, Track, Subscription, Like, Favorite, User, PremiumStatus, SongwritingSong } from '../types'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
@@ -398,9 +398,10 @@ export const premiumApi = {
     return apiCall<PremiumStatus>('/api/premium/status')
   },
 
-  createCheckoutSession: async (): Promise<{ sessionId: string; url: string }> => {
+  createCheckoutSession: async (returnTo?: string): Promise<{ sessionId: string; url: string }> => {
     return apiCall<{ sessionId: string; url: string }>('/api/premium/create-checkout-session', {
       method: 'POST',
+      body: JSON.stringify({ returnTo }),
     })
   },
 
@@ -414,6 +415,35 @@ export const premiumApi = {
     return apiCall<{ message: string }>('/api/premium/cancel', {
       method: 'POST',
     })
+  },
+}
+
+// Songwriting API
+export const songwritingApi = {
+  getAll: async (): Promise<SongwritingSong[]> => {
+    return apiCall<SongwritingSong[]>('/api/songwriting')
+  },
+
+  getById: async (id: string): Promise<SongwritingSong> => {
+    return apiCall<SongwritingSong>(`/api/songwriting/${id}`)
+  },
+
+  create: async (song: Omit<SongwritingSong, 'id' | 'userId' | 'createdAt' | 'updatedAt'>): Promise<SongwritingSong> => {
+    return apiCall<SongwritingSong>('/api/songwriting', {
+      method: 'POST',
+      body: JSON.stringify(song),
+    })
+  },
+
+  update: async (id: string, updates: Partial<SongwritingSong>): Promise<SongwritingSong> => {
+    return apiCall<SongwritingSong>(`/api/songwriting/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    })
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await apiCall(`/api/songwriting/${id}`, { method: 'DELETE' })
   },
 }
 

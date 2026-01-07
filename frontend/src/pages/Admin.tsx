@@ -127,7 +127,7 @@ const Admin = () => {
   const handleBanUser = async (userId: string, userEmail: string) => {
     const reason = banReason[userId] || 'Violation of terms of service'
     
-    if (!confirm(`Are you sure you want to ban ${userEmail}?`)) {
+    if (!confirm(`Are you sure you want to ban ${userEmail}?\n\n⚠️ WARNING: This action cannot be undone. The user will be permanently banned from the platform.`)) {
       return
     }
 

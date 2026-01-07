@@ -92,6 +92,30 @@ const Sidebar = () => {
             </div>
           </>
         )}
+
+        <div className="sidebar-section">
+          <div className="sidebar-section-header">
+            <span className="section-title">Premium</span>
+          </div>
+          <Link 
+            to="/songwriting" 
+            className={`nav-item ${isActive('/songwriting') || isActive('/songwriting/') ? 'active' : ''}`}
+            onClick={closeSidebar}
+          >
+            <span className="nav-icon songwriting-icon"></span>
+            <span className="nav-text">Songwriting Helper</span>
+          </Link>
+          {!isAuthenticated && (
+            <Link 
+              to="/premium" 
+              className={`nav-item ${isActive('/premium') ? 'active' : ''}`}
+              onClick={closeSidebar}
+            >
+              <span className="nav-icon premium-icon"></span>
+              <span className="nav-text">Upgrade to Premium</span>
+            </Link>
+          )}
+        </div>
       </div>
     </div>
     </>

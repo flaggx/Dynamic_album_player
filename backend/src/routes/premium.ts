@@ -102,6 +102,10 @@ router.post('/create-checkout-session', authenticate, async (req: AuthRequest, r
       )
     }
 
+    // Get returnTo from request body if provided
+    const returnTo = req.body.returnTo || ''
+    const returnToParam = returnTo ? `&returnTo=${encodeURIComponent(returnTo)}` : ''
+
     // Create checkout session
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -113,10 +117,11 @@ router.post('/create-checkout-session', authenticate, async (req: AuthRequest, r
         },
       ],
       mode: 'subscription',
-      success_url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/premium?success=true`,
-      cancel_url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/premium?canceled=true`,
+      success_url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/premium?success=true${returnToParam}`,
+      cancel_url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/premium?canceled=true${returnTo ? `&returnTo=${encodeURIComponent(returnTo)}` : ''}`,
       metadata: {
         userId: userId,
+        returnTo: returnTo || '',
       },
     })
 

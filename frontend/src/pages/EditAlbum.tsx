@@ -68,7 +68,7 @@ const EditAlbum = () => {
 
   const handleDelete = async () => {
     if (!id) return
-    if (!window.confirm('Are you sure you want to delete this album? This action cannot be undone.')) {
+    if (!window.confirm(`Are you sure you want to delete "${albumTitle}"?\n\n⚠️ WARNING: This action cannot be undone. The album and all its songs will be permanently deleted.`)) {
       return
     }
 
@@ -85,7 +85,9 @@ const EditAlbum = () => {
   }
 
   const handleDeleteSong = async (songId: string) => {
-    if (!window.confirm('Are you sure you want to delete this song? This action cannot be undone.')) {
+    const song = songs.find(s => s.id === songId)
+    const songTitle = song?.title || 'this song'
+    if (!window.confirm(`Are you sure you want to delete "${songTitle}"?\n\n⚠️ WARNING: This action cannot be undone. The song and all its tracks will be permanently deleted.`)) {
       return
     }
 

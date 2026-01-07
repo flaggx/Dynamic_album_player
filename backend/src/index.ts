@@ -11,6 +11,7 @@ import premiumWebhook from './routes/premium-webhook'
 import likeRoutes from './routes/likes'
 import favoriteRoutes from './routes/favorites'
 import adminRoutes from './routes/admin'
+import songwritingRoutes from './routes/songwriting'
 import { initDatabase } from './database/init'
 import { migrateDatabase } from './database/migrate'
 import { errorHandler } from './middleware/errorHandler'
@@ -44,6 +45,7 @@ app.use('/api/premium', premiumRoutes)
 app.use('/api/likes', likeRoutes)
 app.use('/api/favorites', favoriteRoutes)
 app.use('/api/admin', adminRoutes)
+app.use('/api/songwriting', songwritingRoutes)
 
 // Root route
 app.get('/', (req, res) => {

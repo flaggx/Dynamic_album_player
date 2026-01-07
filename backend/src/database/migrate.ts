@@ -57,6 +57,48 @@ export const migrateDatabase = async (): Promise<void> => {
           await dbRun(`CREATE INDEX IF NOT EXISTS idx_stripe_events_stripe_event_id ON stripe_events(stripe_event_id)`)
         }
 
+        // Check if songwriting_songs table exists
+        const songwritingTableResult = await dbGet(
+          "SELECT name FROM sqlite_master WHERE type='table' AND name='songwriting_songs'"
+        )
+        
+        if (!songwritingTableResult) {
+          console.log('Creating songwriting_songs table')
+          await dbRun(`
+            CREATE TABLE IF NOT EXISTS songwriting_songs (
+              id TEXT PRIMARY KEY,
+              user_id TEXT NOT NULL,
+              title TEXT NOT NULL,
+              author_first_name TEXT NOT NULL,
+              author_last_name TEXT NOT NULL,
+              key TEXT NOT NULL,
+              time_signature TEXT DEFAULT '4/4',
+              chord_progression TEXT,
+              structure TEXT NOT NULL,
+              is_public INTEGER DEFAULT 0,
+              created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+              updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+              FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+          `)
+          await dbRun(`CREATE INDEX IF NOT EXISTS idx_songwriting_songs_user_id ON songwriting_songs(user_id)`)
+          await dbRun(`CREATE INDEX IF NOT EXISTS idx_songwriting_songs_public ON songwriting_songs(is_public)`)
+        } else {
+          // Check if author columns exist and add them if missing
+          const songwritingTableInfo = await dbAll("PRAGMA table_info(songwriting_songs)")
+          const songwritingColumnNames = songwritingTableInfo.map((col: any) => col.name)
+          
+          if (!songwritingColumnNames.includes('author_first_name')) {
+            console.log('Adding author_first_name column to songwriting_songs')
+            await dbRun(`ALTER TABLE songwriting_songs ADD COLUMN author_first_name TEXT`)
+          }
+          
+          if (!songwritingColumnNames.includes('author_last_name')) {
+            console.log('Adding author_last_name column to songwriting_songs')
+            await dbRun(`ALTER TABLE songwriting_songs ADD COLUMN author_last_name TEXT`)
+          }
+        }
+
         console.log('✅ Database migration completed')
         resolve()
       } catch (error) {
