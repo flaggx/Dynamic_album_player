@@ -9,6 +9,7 @@ import { MUSICAL_KEYS, ROMAN_NUMERALS, getChordFromProgression, getChordVoicings
 import Sidebar from '../components/Sidebar'
 import TopBar from '../components/TopBar'
 import LoadingSpinner from '../components/LoadingSpinner'
+import TimelineEditor from '../components/TimelineEditor'
 import './Songwriting.css'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -932,6 +933,36 @@ const Songwriting = () => {
     return { lyrics, chords }
   }
 
+  // Helper: Convert timelineItems to lyrics/chords format for backward compatibility
+  const timelineItemsToLyrics = (timelineItems: Array<{ startBeat: number; duration: number; content: string; type: string; voicing?: string }>, beatsPerBar: number): { lyrics: string; chords: Array<{ position: number; chord: string; voicing?: string }> } => {
+    let lyrics = ''
+    const chords: Array<{ position: number; chord: string; voicing?: string }> = []
+    
+    // Sort items by startBeat
+    const sortedItems = [...timelineItems].sort((a, b) => a.startBeat - b.startBeat)
+    
+    // Convert beats to character positions (rough approximation: 4 characters per beat)
+    sortedItems.forEach((item) => {
+      const charPosition = item.startBeat * 4
+      
+      if (item.type === 'chord') {
+        chords.push({
+          position: charPosition,
+          chord: item.content,
+          voicing: item.voicing,
+        })
+      } else if (item.type === 'lyric') {
+        // Pad lyrics to the right position
+        while (lyrics.length < charPosition) {
+          lyrics += ' '
+        }
+        lyrics += item.content + ' '
+      }
+    })
+    
+    return { lyrics: lyrics.trim(), chords }
+  }
+
   // Ensure section has bars array (convert from lyrics if needed)
   const ensureSectionHasBars = (section: SongSection): SongSection => {
     if (section.bars && section.bars.length > 0) {
@@ -965,19 +996,13 @@ const Songwriting = () => {
 
   // Helper functions
   const addSection = (type: SongSectionType) => {
-    const newBar: Bar = {
-      id: uuidv4(),
-      barNumber: 1,
-      text: '',
-      chords: [],
-    }
     const newSection: SongSection = {
       id: uuidv4(),
       type,
       order: structure.length,
-      lyrics: '', // Will be generated from bars when saving
-      chords: [], // Will be generated from bars when saving
-      bars: [newBar],
+      lyrics: '', // Will be generated from timelineItems when saving
+      chords: [], // Will be generated from timelineItems when saving
+      timelineItems: [], // Start with empty timeline
     }
     setStructure([...structure, newSection])
   }
@@ -1292,8 +1317,22 @@ const Songwriting = () => {
 
     setIsSaving(true)
     try {
-      // Convert bars to lyrics/chords for database storage
+      // Convert timelineItems or bars to lyrics/chords for database storage
       const structureForSave = structure.map(section => {
+        // If section has timelineItems, use those
+        if (section.timelineItems && section.timelineItems.length > 0) {
+          const { lyrics, chords } = timelineItemsToLyrics(section.timelineItems, beatsPerBar)
+          return {
+            ...section,
+            lyrics,
+            chords,
+            // Don't send timelineItems or bars to backend
+            timelineItems: undefined,
+            bars: undefined,
+          }
+        }
+        
+        // Otherwise, use bars (backward compatibility)
         const sectionWithBars = ensureSectionHasBars(section)
         const { lyrics, chords } = barsToLyrics(sectionWithBars.bars || [])
         return {
@@ -1661,10 +1700,6 @@ const Songwriting = () => {
 
             <div className="form-section">
               <h2>Chord Progression (Roman Numerals)</h2>
-              <p className="section-hint">
-                <span className="drag-hint-icon">👉</span>
-                <strong>Tip:</strong> Drag chords from here into the chord line above each bar's text field. The chord will be placed where you drop it.
-              </p>
               <div className="chord-progression-selector">
                 <label>Select a Common Progression:</label>
                 <select
@@ -1787,189 +1822,17 @@ const Songwriting = () => {
                 ))}
               </div>
 
-              <div className="sections-list">
-                {structure
-                  .sort((a, b) => (a.order || 0) - (b.order || 0))
-                  .map((section, index) => {
-                    const sectionType = SECTION_TYPES.find(st => st.type === section.type)
-                    const sectionWithBars = ensureSectionHasBars(section)
-                    const bars = sectionWithBars.bars || []
-
-                    return (
-                      <div
-                        key={section.id}
-                        className={`section-editor ${dragOverIndex === index ? 'drag-over' : ''}`}
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, section)}
-                        onDragOver={(e) => handleDragOver(e, index)}
-                        onDrop={(e) => handleDrop(e, index)}
-                        onDragEnd={handleDragEnd}
-                      >
-                        <div className="section-header">
-                          <h3>{sectionType?.label || section.type}</h3>
-                          <div className="section-header-actions">
-                            <button
-                              className="add-bar-btn"
-                              onClick={() => addBarToSection(section.id)}
-                              title="Add a new bar to this section"
-                            >
-                              + Add Bar
-                            </button>
-                            <button
-                              className="delete-section-btn"
-                              onClick={() => deleteSection(section.id)}
-                            >
-                              ×
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="bars-container">
-                          {bars.map((bar, barIdx) => {
-                            // Calculate absolute start position for this bar
-                            let absoluteStart = 0
-                            for (let i = 0; i < barIdx; i++) {
-                              absoluteStart += bars[i].text.length
-                            }
-
-                            return (
-                              <BarBlock
-                                key={bar.id}
-                                barNumber={bar.barNumber}
-                                beatsPerBar={beatsPerBar}
-                                tempo={tempo}
-                                text={bar.text}
-                                chords={bar.chords}
-                                barStartPosition={absoluteStart}
-                                onTextChange={(newText) => {
-                                  // Update the bar text directly
-                                  const updatedBars = [...bars]
-                                  updatedBars[barIdx] = { ...updatedBars[barIdx], text: newText }
-                                  updateSection(section.id, { bars: updatedBars })
-                                }}
-                                onAddChord={(position, chord) => {
-                                  // Position is relative to bar start, so use it directly
-                                  addChordToBar(section.id, bar.id, position, chord)
-                                }}
-                                onMoveChord={(oldPosition, newPosition) => {
-                                  // Move chord within the bar
-                                  moveChordInBar(section.id, bar.id, oldPosition, newPosition)
-                                }}
-                                onRemoveBar={() => {
-                                  removeBarFromSection(section.id, bar.id)
-                                }}
-                                availableChords={chordProgression}
-                                songKey={key}
-                                onChordHover={(chord, voicing, x, y) => setHoveredChord({ chord, voicing, x, y })}
-                                onChordLeave={() => setHoveredChord(null)}
-                              />
-                            )
-                          })}
-                          
-                          {bars.length === 0 && (
-                            <BarBlock
-                              barNumber={1}
-                              beatsPerBar={beatsPerBar}
-                              tempo={tempo}
-                              text=""
-                              chords={[]}
-                              barStartPosition={0}
-                              onTextChange={(newText) => {
-                                // Create first bar
-                                const newBar: Bar = {
-                                  id: uuidv4(),
-                                  barNumber: 1,
-                                  text: newText,
-                                  chords: [],
-                                }
-                                updateSection(section.id, { bars: [newBar] })
-                              }}
-                              onAddChord={(position, chord) => {
-                                // Ensure bar exists first
-                                const sectionWithBars = ensureSectionHasBars(section)
-                                const bars = sectionWithBars.bars || []
-                                if (bars.length === 0) {
-                                  const newBar: Bar = {
-                                    id: uuidv4(),
-                                    barNumber: 1,
-                                    text: '',
-                                    chords: [],
-                                  }
-                                  updateSection(section.id, { bars: [newBar] })
-                                  setTimeout(() => {
-                                    addChordToBar(section.id, newBar.id, position, chord)
-                                  }, 0)
-                                } else {
-                                  addChordToBar(section.id, bars[0].id, position, chord)
-                                }
-                              }}
-                              onMoveChord={(oldPosition, newPosition) => {
-                                // Move chord - bar should exist at this point
-                                const sectionWithBars = ensureSectionHasBars(section)
-                                const bars = sectionWithBars.bars || []
-                                if (bars.length > 0) {
-                                  moveChordInBar(section.id, bars[0].id, oldPosition, newPosition)
-                                }
-                              }}
-                              onRemoveBar={() => {
-                                // Can't remove the only bar
-                                toast.error('Cannot remove the last bar. A section must have at least one bar.')
-                              }}
-                              availableChords={chordProgression}
-                              songKey={key}
-                              onChordHover={(chord, voicing, x, y) => setHoveredChord({ chord, voicing, x, y })}
-                              onChordLeave={() => setHoveredChord(null)}
-                            />
-                          )}
-                        </div>
-
-                        {/* Show all chords in section (aggregated from all bars) */}
-                        {(() => {
-                          const allChords = bars.flatMap((bar, barIdx) => {
-                            let absoluteStart = 0
-                            for (let i = 0; i < barIdx; i++) {
-                              absoluteStart += bars[i].text.length
-                            }
-                            return bar.chords.map(c => ({
-                              ...c,
-                              absolutePosition: absoluteStart + c.position,
-                              barId: bar.id,
-                            }))
-                          })
-                          
-                          return allChords.length > 0 ? (
-                            <div className="section-chords">
-                              <label>Chords in this section:</label>
-                              <div className="chord-list">
-                                {allChords.map((chordData, chordIdx) => {
-                                  const voicings = getChordVoicings(chordData.chord)
-                                  return (
-                                    <div key={chordIdx} className="chord-item">
-                                      <span className="chord-name">{formatChordName(chordData.chord)}</span>
-                                      <select
-                                        value={chordData.voicing || 'Open'}
-                                        onChange={(e) => updateChordVoicingInBar(section.id, chordData.barId, chordData.position, e.target.value)}
-                                      >
-                                        {voicings.map(v => (
-                                          <option key={v.name} value={v.name}>{v.name}</option>
-                                        ))}
-                                      </select>
-                                      <button
-                                        className="remove-chord-btn"
-                                        onClick={() => removeChordFromBar(section.id, chordData.barId, chordData.position)}
-                                      >
-                                        ×
-                                      </button>
-                                    </div>
-                                  )
-                                })}
-                              </div>
-                            </div>
-                          ) : null
-                        })()}
-                      </div>
-                    )
-                  })}
+              <div className="timeline-editor-wrapper">
+                <TimelineEditor
+                  sections={structure}
+                  timeSignature={timeSignature}
+                  tempo={tempo}
+                  songKey={key}
+                  chordProgression={chordProgression}
+                  onUpdateSection={updateSection}
+                  onAddSection={addSection}
+                  onDeleteSection={deleteSection}
+                />
               </div>
             </div>
 

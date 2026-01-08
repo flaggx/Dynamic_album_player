@@ -73,6 +73,18 @@ export interface PremiumStatus {
 
 export type SongSectionType = 'intro' | 'verse' | 'pre-chorus' | 'chorus' | 'bridge' | 'outro'
 
+export type TimelineItemType = 'chord' | 'lyric' | 'section-title'
+
+export interface TimelineItem {
+  id: string
+  type: TimelineItemType
+  startBeat: number // Position in timeline (measured in beats from start)
+  duration: number // Duration in beats
+  content: string // The actual chord name, lyric text, or section title
+  voicing?: string // For chords only
+  sectionId?: string // For section titles only
+}
+
 export interface Bar {
   id: string
   barNumber: number
@@ -87,6 +99,7 @@ export interface SongSection {
   lyrics: string // Kept for backward compatibility with database
   chords: Array<{ position: number; chord: string; voicing?: string }> // Kept for backward compatibility
   bars?: Bar[] // New node-based structure - if present, use this instead of lyrics
+  timelineItems?: TimelineItem[] // DAW-style timeline items - if present, use this instead of bars
 }
 
 export interface SongwritingSong {

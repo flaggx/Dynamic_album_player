@@ -2318,6 +2318,17 @@
   margin: 0;
 }
 
+.timeline-editor-wrapper {
+  margin-top: 1.5rem;
+  min-height: 70vh;
+  height: 70vh;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
 @media (max-width: 768px) {
   .songwriting-container {
     padding: 1rem;
