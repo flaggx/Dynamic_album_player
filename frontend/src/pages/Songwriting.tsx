@@ -10,6 +10,8 @@ import Sidebar from '../components/Sidebar'
 import TopBar from '../components/TopBar'
 import LoadingSpinner from '../components/LoadingSpinner'
 import TimelineEditor from '../components/TimelineEditor'
+import NodeBasedCanvas from '../components/NodeBasedCanvas'
+import { SongNode } from '../types'
 import './Songwriting.css'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -104,11 +106,11 @@ let currentOnComplete: (() => void) | null = null
 let currentBeatUpdate: ((beat: number) => void) | null = null
 
 const startMetronome = (
+  tempo: number,
   beatsPerBar: number, 
-  tempo: number, 
   barId: string, 
-  onComplete: () => void,
-  onBeatUpdate: (beat: number) => void
+  onBeatUpdate: (beat: number) => void,
+  onComplete?: () => void
 ) => {
   // Stop any existing metronome
   if (metronomeInterval !== null) {
@@ -122,7 +124,7 @@ const startMetronome = (
   }
   
   currentBarId = barId
-  currentOnComplete = onComplete
+  currentOnComplete = onComplete || null
   currentBeatUpdate = onBeatUpdate
   const beatDuration = 60000 / tempo // milliseconds per beat
   
@@ -133,7 +135,7 @@ const startMetronome = (
   // Play first beat immediately
   playMetronomeClick(true)
   if (currentBeatUpdate) {
-    currentBeatUpdate(0)
+    currentBeatUpdate(0) // Total beat count starts at 0
   }
   beatCount = 1
   
@@ -143,7 +145,7 @@ const startMetronome = (
     
     playMetronomeClick(isFirstBeat)
     if (currentBeatUpdate) {
-      currentBeatUpdate(currentBeat)
+      currentBeatUpdate(beatCount) // Pass total beat count, not just beat in bar
     }
     beatCount++
   }, beatDuration)
@@ -212,17 +214,17 @@ const BarBlock = ({
       // Start playing
       setIsPlaying(true)
       startMetronome(
+        tempo,
         beatsPerBar, 
-        tempo, 
         barIdRef.current, 
-        () => {
-          setIsPlaying(false)
-          setCurrentBeat(-1)
-        },
         (beat: number) => {
           if (currentBarId === barIdRef.current) {
             setCurrentBeat(beat)
           }
+        },
+        () => {
+          setIsPlaying(false)
+          setCurrentBeat(-1)
         }
       )
     }
@@ -840,10 +842,16 @@ const Songwriting = () => {
   const [tempo, setTempo] = useState<number>(120)
   const [chordProgression, setChordProgression] = useState<string[]>(['I', 'IV', 'V', 'vi'])
   const [structure, setStructure] = useState<SongSection[]>([])
+  const [nodes, setNodes] = useState<SongNode[]>([]) // Node-based system
   const [isPublic, setIsPublic] = useState(false)
   const [viewMode, setViewMode] = useState<'edit' | 'view'>('edit')
   const [showModeModal, setShowModeModal] = useState(false)
   const [hoveredChord, setHoveredChord] = useState<{ chord: string; voicing: string; x: number; y: number } | null>(null)
+  
+  // Metronome state
+  const [isMetronomePlaying, setIsMetronomePlaying] = useState(false)
+  const [currentBeat, setCurrentBeat] = useState<number>(-1)
+  const [currentBar, setCurrentBar] = useState<number>(0)
   
   const [draggedSection, setDraggedSection] = useState<SongSection | null>(null)
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
@@ -1822,17 +1830,53 @@ const Songwriting = () => {
                 ))}
               </div>
 
-              <div className="timeline-editor-wrapper">
-                <TimelineEditor
-                  sections={structure}
+              <div className="node-canvas-wrapper">
+                <NodeBasedCanvas
+                  nodes={nodes}
+                  onNodesChange={setNodes}
                   timeSignature={timeSignature}
                   tempo={tempo}
                   songKey={key}
                   chordProgression={chordProgression}
-                  onUpdateSection={updateSection}
-                  onAddSection={addSection}
-                  onDeleteSection={deleteSection}
+                  beatsPerBar={getBeatsPerBar(timeSignature)}
+                  isMetronomePlaying={isMetronomePlaying}
+                  currentBeat={currentBeat}
+                  currentBar={currentBar}
                 />
+                <div className="metronome-controls">
+                  <button
+                    className={`metronome-play-btn ${isMetronomePlaying ? 'playing' : ''}`}
+                    onClick={() => {
+                      if (isMetronomePlaying) {
+                        stopMetronome()
+                        setIsMetronomePlaying(false)
+                        setCurrentBeat(-1)
+                        setCurrentBar(0)
+                      } else {
+                        startMetronome(
+                          tempo,
+                          getBeatsPerBar(timeSignature),
+                          'global',
+                          (totalBeat: number) => {
+                            // totalBeat is the total beat count from start
+                            setCurrentBeat(totalBeat === -1 ? -1 : totalBeat)
+                            setCurrentBar(totalBeat === -1 ? 0 : Math.floor(totalBeat / getBeatsPerBar(timeSignature)))
+                          },
+                          () => {
+                            setIsMetronomePlaying(false)
+                            setCurrentBeat(-1)
+                            setCurrentBar(0)
+                          }
+                        )
+                        setIsMetronomePlaying(true)
+                      }
+                    }}
+                    title={isMetronomePlaying ? 'Stop metronome' : 'Start metronome'}
+                  >
+                    {isMetronomePlaying ? '⏸' : '▶'}
+                  </button>
+                  <span className="metronome-label">Metronome</span>
+                </div>
               </div>
             </div>
 

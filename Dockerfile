@@ -11,14 +11,6 @@ ARG VITE_AUTH0_AUDIENCE
 ARG VITE_AUTH0_REDIRECT_URI
 ARG VITE_API_URL
 
-# Set as environment variables for Vite build
-# Use empty string as default if not provided (Vite will handle validation)
-ENV VITE_AUTH0_DOMAIN=${VITE_AUTH0_DOMAIN:-}
-ENV VITE_AUTH0_CLIENT_ID=${VITE_AUTH0_CLIENT_ID:-}
-ENV VITE_AUTH0_AUDIENCE=${VITE_AUTH0_AUDIENCE:-}
-ENV VITE_AUTH0_REDIRECT_URI=${VITE_AUTH0_REDIRECT_URI:-}
-ENV VITE_API_URL=${VITE_API_URL:-}
-
 # Copy frontend package files
 COPY frontend/package*.json ./
 COPY frontend/tsconfig*.json ./
@@ -29,6 +21,22 @@ RUN npm ci
 
 # Copy frontend source code
 COPY frontend/ .
+
+# Create .env file from build arguments for Vite to read during build
+# This ensures the values are available at build time
+RUN echo "VITE_AUTH0_DOMAIN=${VITE_AUTH0_DOMAIN}" > .env && \
+    echo "VITE_AUTH0_CLIENT_ID=${VITE_AUTH0_CLIENT_ID}" >> .env && \
+    echo "VITE_AUTH0_AUDIENCE=${VITE_AUTH0_AUDIENCE}" >> .env && \
+    echo "VITE_AUTH0_REDIRECT_URI=${VITE_AUTH0_REDIRECT_URI:-https://lostcampstudios.com/callback}" >> .env && \
+    echo "VITE_API_URL=${VITE_API_URL:-https://lostcampstudios.com}" >> .env && \
+    cat .env
+
+# Set as environment variables for Vite build (Vite reads from .env and process.env)
+ENV VITE_AUTH0_DOMAIN=${VITE_AUTH0_DOMAIN}
+ENV VITE_AUTH0_CLIENT_ID=${VITE_AUTH0_CLIENT_ID}
+ENV VITE_AUTH0_AUDIENCE=${VITE_AUTH0_AUDIENCE}
+ENV VITE_AUTH0_REDIRECT_URI=${VITE_AUTH0_REDIRECT_URI:-https://lostcampstudios.com/callback}
+ENV VITE_API_URL=${VITE_API_URL:-https://lostcampstudios.com}
 
 # Build frontend
 RUN npm run build

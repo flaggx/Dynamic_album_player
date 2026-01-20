@@ -2329,6 +2329,67 @@
   flex-direction: column;
 }
 
+.node-canvas-wrapper {
+  margin-top: 1.5rem;
+  min-height: 70vh;
+  height: 70vh;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.metronome-controls {
+  position: absolute;
+  bottom: 1rem;
+  right: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: rgba(0, 0, 0, 0.8);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid rgba(29, 185, 84, 0.3);
+  z-index: 100;
+}
+
+.metronome-play-btn {
+  background: rgba(29, 185, 84, 0.2);
+  border: 1px solid rgba(29, 185, 84, 0.4);
+  border-radius: 4px;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  height: 40px;
+  color: #1db954;
+  font-size: 1.2rem;
+}
+
+.metronome-play-btn:hover {
+  background: rgba(29, 185, 84, 0.3);
+  border-color: rgba(29, 185, 84, 0.6);
+  transform: scale(1.05);
+}
+
+.metronome-play-btn.playing {
+  background: rgba(29, 185, 84, 0.4);
+  border-color: #1db954;
+  box-shadow: 0 0 8px rgba(29, 185, 84, 0.5);
+  animation: pulse 1s ease-in-out infinite;
+}
+
+.metronome-label {
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
 @media (max-width: 768px) {
   .songwriting-container {
     padding: 1rem;

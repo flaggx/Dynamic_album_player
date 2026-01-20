@@ -124,3 +124,17 @@ export interface ChordVoicing {
   baseFret?: number // If capo or higher position
 }
 
+// Node-based system for free-form placement
+export type NodeType = 'lyric' | 'chord'
+
+export interface SongNode {
+  id: string
+  type: NodeType
+  x: number // X position in pixels (absolute, no grid snapping)
+  y: number // Y position in pixels (absolute, no grid snapping)
+  width: number // Width in pixels (for lyrics, resizable)
+  height?: number // Height in pixels (optional, auto for chords)
+  content: string // The text content (lyrics) or chord name
+  voicing?: string // For chord nodes only
+  zIndex?: number // For layering
+}

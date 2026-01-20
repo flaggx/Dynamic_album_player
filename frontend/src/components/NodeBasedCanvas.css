@@ -1,0 +1,269 @@
+.node-based-canvas-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #121212;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.node-canvas-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  gap: 2rem;
+}
+
+.chord-palette-section h3 {
+  color: #fff;
+  font-size: 0.9rem;
+  margin: 0 0 0.5rem 0;
+  font-weight: 600;
+}
+
+.chord-palette {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.palette-chord-item {
+  background: rgba(29, 185, 84, 0.2);
+  border: 1px solid rgba(29, 185, 84, 0.4);
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  color: #1db954;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.palette-chord-item:hover {
+  background: rgba(29, 185, 84, 0.3);
+  border-color: rgba(29, 185, 84, 0.6);
+  transform: translateY(-2px);
+}
+
+.toolbar-hint {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+/* Canvas with grid background */
+.node-canvas {
+  position: relative;
+  flex: 1;
+  overflow: auto;
+  background: #181818;
+  cursor: crosshair;
+}
+
+/* Static grid background */
+.canvas-grid-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.canvas-bar {
+  position: absolute;
+  border: 1px solid rgba(29, 185, 84, 0.3);
+  background: rgba(29, 185, 84, 0.05);
+  min-height: 200px;
+}
+
+.canvas-bar.active-bar {
+  background: rgba(29, 185, 84, 0.15);
+  border-color: rgba(29, 185, 84, 0.6);
+  box-shadow: 0 0 10px rgba(29, 185, 84, 0.3);
+}
+
+.bar-label {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  color: rgba(29, 185, 84, 0.7);
+  font-size: 0.7rem;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.canvas-beat {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  pointer-events: none;
+}
+
+.canvas-beat.active-beat {
+  background: rgba(29, 185, 84, 0.2);
+  border-right: 2px solid #1db954;
+  box-shadow: 0 0 8px rgba(29, 185, 84, 0.5);
+}
+
+/* Nodes layer */
+.canvas-nodes-layer {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  height: 100%;
+}
+
+/* Song Node Styles */
+.song-node {
+  position: absolute;
+  background: rgba(24, 24, 24, 0.95);
+  border: 2px solid rgba(29, 185, 84, 0.4);
+  border-radius: 8px;
+  padding: 0.75rem;
+  cursor: move;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  transition: box-shadow 0.2s ease;
+  min-width: 100px;
+  min-height: 40px;
+}
+
+.song-node:hover {
+  border-color: rgba(29, 185, 84, 0.6);
+  box-shadow: 0 4px 12px rgba(29, 185, 84, 0.3);
+}
+
+.song-node.selected {
+  border-color: #1db954;
+  box-shadow: 0 0 15px rgba(29, 185, 84, 0.5);
+  z-index: 100;
+}
+
+.song-node.dragging {
+  opacity: 0.7;
+  cursor: grabbing;
+}
+
+.song-node.lyric {
+  min-height: 80px;
+}
+
+.song-node.chord {
+  min-width: 80px;
+  min-height: 50px;
+  cursor: move;
+}
+
+.node-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.node-type-label {
+  color: #1db954;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.node-delete-btn {
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 4px;
+  color: #ef4444;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.2rem;
+  line-height: 1;
+  transition: all 0.2s ease;
+}
+
+.node-delete-btn:hover {
+  background: rgba(239, 68, 68, 0.3);
+  border-color: rgba(239, 68, 68, 0.6);
+  transform: scale(1.1);
+}
+
+.node-content-input {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  padding: 0.5rem;
+  color: #fff;
+  font-size: 0.95rem;
+  font-family: 'Courier New', monospace;
+  resize: none;
+  min-height: 60px;
+}
+
+.node-content-input:focus {
+  outline: none;
+  border-color: #1db954;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.node-content-display {
+  color: #fff;
+  font-size: 0.95rem;
+  font-family: 'Courier New', monospace;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  min-height: 40px;
+  cursor: text;
+}
+
+.node-content-display.placeholder {
+  color: rgba(255, 255, 255, 0.4);
+  font-style: italic;
+}
+
+.chord-node-content {
+  text-align: center;
+  color: #1db954;
+  font-weight: 700;
+  font-size: 1.1rem;
+  cursor: move;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+}
+
+.node-resize-handle {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 16px;
+  height: 16px;
+  background: rgba(29, 185, 84, 0.5);
+  border-top-left-radius: 8px;
+  cursor: nwse-resize;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.song-node.lyric:hover .node-resize-handle,
+.song-node.lyric.selected .node-resize-handle {
+  opacity: 1;
+}
+
+.node-resize-handle:hover {
+  background: rgba(29, 185, 84, 0.8);
+}
