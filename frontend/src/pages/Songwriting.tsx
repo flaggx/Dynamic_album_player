@@ -1817,19 +1817,6 @@ const Songwriting = () => {
             </div>
 
             <div className="form-section">
-              <h2>Song Structure</h2>
-              <div className="section-buttons">
-                {SECTION_TYPES.map(st => (
-                  <button
-                    key={st.type}
-                    className="add-section-btn"
-                    onClick={() => addSection(st.type)}
-                  >
-                    + {st.label}
-                  </button>
-                ))}
-              </div>
-
               <div className="node-canvas-wrapper">
                 <NodeBasedCanvas
                   nodes={nodes}
@@ -1842,6 +1829,8 @@ const Songwriting = () => {
                   isMetronomePlaying={isMetronomePlaying}
                   currentBeat={currentBeat}
                   currentBar={currentBar}
+                  sectionTypes={SECTION_TYPES}
+                  onAddSection={(sectionType) => addSection(sectionType as SongSectionType)}
                 />
                 <div className="metronome-controls">
                   <button

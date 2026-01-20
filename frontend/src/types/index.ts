@@ -125,7 +125,7 @@ export interface ChordVoicing {
 }
 
 // Node-based system for free-form placement
-export type NodeType = 'lyric' | 'chord'
+export type NodeType = 'lyric' | 'chord' | 'section'
 
 export interface SongNode {
   id: string
@@ -134,7 +134,8 @@ export interface SongNode {
   y: number // Y position in pixels (absolute, no grid snapping)
   width: number // Width in pixels (for lyrics, resizable)
   height?: number // Height in pixels (optional, auto for chords)
-  content: string // The text content (lyrics) or chord name
+  content: string // The text content (lyrics), chord name, or section label
   voicing?: string // For chord nodes only
+  sectionType?: string // For section nodes only (e.g., 'intro', 'verse', 'chorus')
   zIndex?: number // For layering
 }

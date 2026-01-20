@@ -15,6 +15,8 @@ interface NodeBasedCanvasProps {
   isMetronomePlaying: boolean
   currentBeat: number
   currentBar: number
+  sectionTypes?: Array<{ type: string; label: string }>
+  onAddSection?: (sectionType: string) => void // sectionType will be cast to SongSectionType in parent
 }
 
 const NodeBasedCanvas = ({
@@ -28,6 +30,8 @@ const NodeBasedCanvas = ({
   isMetronomePlaying,
   currentBeat,
   currentBar,
+  sectionTypes = [],
+  onAddSection,
 }: NodeBasedCanvasProps) => {
   const canvasRef = useRef<HTMLDivElement>(null)
   const [draggedNode, setDraggedNode] = useState<string | null>(null)
@@ -36,13 +40,16 @@ const NodeBasedCanvas = ({
   const [resizeStart, setResizeStart] = useState<{ x: number; width: number } | null>(null)
   const [editingNode, setEditingNode] = useState<string | null>(null)
   const [selectedNode, setSelectedNode] = useState<string | null>(null)
+  const [isDraggingOverCanvas, setIsDraggingOverCanvas] = useState(false)
+  const [numberOfRows, setNumberOfRows] = useState<number>(4) // Start with 4 rows
 
   // Grid configuration
-  const gridSize = 20 // pixels per grid square
+  const gridSize = 50 // pixels per grid square
   const barsPerRow = 16 // Number of bars to show horizontally
-  const totalBars = Math.max(32, Math.ceil(nodes.length / 4)) // Dynamic based on content
+  const totalBars = barsPerRow * numberOfRows // Total bars = bars per row * number of rows
   const canvasWidth = barsPerRow * beatsPerBar * gridSize
-  const canvasHeight = Math.max(800, Math.ceil(totalBars / barsPerRow) * 200)
+  const rowHeight = 200 // Height of each row in pixels
+  const canvasHeight = numberOfRows * rowHeight
   
   // Calculate which bar the current beat is in
   const getBarFromBeat = (beat: number): number => {
@@ -150,29 +157,76 @@ const NodeBasedCanvas = ({
     }
   }, [resizingNode, resizeStart, nodes, onNodesChange])
 
-  // Add new node on canvas click
-  const handleCanvasClick = useCallback((e: React.MouseEvent) => {
-    if (!canvasRef.current || editingNode || draggedNode || resizingNode) return
-    if ((e.target as HTMLElement).closest('.song-node')) return // Don't add if clicking on existing node
+  // Handle drop on canvas from palette items
+  const handleCanvasDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    if (!canvasRef.current) return
+    
+    const nodeType = e.dataTransfer.getData('application/node-type')
+    if (!nodeType) return
 
     const rect = canvasRef.current.getBoundingClientRect()
     const x = e.clientX - rect.left
     const y = e.clientY - rect.top
 
-    // Create a new lyric node
-    const newNode: SongNode = {
-      id: uuidv4(),
-      type: 'lyric',
-      x,
-      y,
-      width: 200,
-      content: '',
-    }
+    if (nodeType === 'lyric') {
+      // Create a new lyric node
+      const newNode: SongNode = {
+        id: uuidv4(),
+        type: 'lyric',
+        x,
+        y,
+        width: 200,
+        content: '',
+      }
+      onNodesChange([...nodes, newNode])
+      setEditingNode(newNode.id)
+      setSelectedNode(newNode.id)
+    } else if (nodeType === 'chord') {
+      const chord = e.dataTransfer.getData('application/chord')
+      if (chord) {
+        const actualChord = getChordFromProgression(songKey, chord)
+        const voicings = getChordVoicings(actualChord)
+        const defaultVoicing = voicings[0]?.name || 'Open'
 
-    onNodesChange([...nodes, newNode])
-    setEditingNode(newNode.id)
-    setSelectedNode(newNode.id)
-  }, [nodes, onNodesChange, editingNode, draggedNode, resizingNode])
+        const newNode: SongNode = {
+          id: uuidv4(),
+          type: 'chord',
+          x,
+          y,
+          width: 80,
+          height: 40,
+          content: formatChordName(actualChord),
+          voicing: defaultVoicing,
+        }
+        onNodesChange([...nodes, newNode])
+        setSelectedNode(newNode.id)
+      }
+    } else if (nodeType === 'section') {
+      const sectionType = e.dataTransfer.getData('application/section-type')
+      const sectionLabel = e.dataTransfer.getData('application/section-label')
+      if (sectionType && onAddSection) {
+        // Call the parent's addSection function to add to structure
+        onAddSection(sectionType)
+        
+        // Also create a visual node on the canvas
+        const newNode: SongNode = {
+          id: uuidv4(),
+          type: 'section',
+          x,
+          y,
+          width: 120,
+          height: 40,
+          content: sectionLabel,
+          sectionType: sectionType,
+        }
+        onNodesChange([...nodes, newNode])
+        setSelectedNode(newNode.id)
+      }
+    }
+  }, [nodes, onNodesChange, songKey, onAddSection])
 
   // Handle node content edit
   const handleNodeContentChange = useCallback((nodeId: string, content: string) => {
@@ -182,86 +236,157 @@ const NodeBasedCanvas = ({
     onNodesChange(updatedNodes)
   }, [nodes, onNodesChange])
 
-  // Add chord node from palette
-  const handleAddChordNode = useCallback((chord: string, e: React.MouseEvent) => {
-    if (!canvasRef.current) return
 
-    const rect = canvasRef.current.getBoundingClientRect()
-    const x = e.clientX - rect.left
-    const y = e.clientY - rect.top
-
-    const actualChord = getChordFromProgression(songKey, chord)
-    const voicings = getChordVoicings(actualChord)
-    const defaultVoicing = voicings[0]?.name || 'Open'
-
-    const newNode: SongNode = {
-      id: uuidv4(),
-      type: 'chord',
-      x,
-      y,
-      width: 80,
-      height: 40,
-      content: formatChordName(actualChord),
-      voicing: defaultVoicing,
-    }
-
-    onNodesChange([...nodes, newNode])
-    setSelectedNode(newNode.id)
-  }, [nodes, onNodesChange, songKey])
-
-  // Delete node
+  // Delete node (in-memory, no confirmation needed)
   const handleDeleteNode = useCallback((nodeId: string) => {
-    if (window.confirm('Delete this node?')) {
-      onNodesChange(nodes.filter(n => n.id !== nodeId))
-      if (selectedNode === nodeId) setSelectedNode(null)
-      if (editingNode === nodeId) setEditingNode(null)
-    }
+    onNodesChange(nodes.filter(n => n.id !== nodeId))
+    if (selectedNode === nodeId) setSelectedNode(null)
+    if (editingNode === nodeId) setEditingNode(null)
   }, [nodes, onNodesChange, selectedNode, editingNode])
 
   return (
     <div className="node-based-canvas-container">
-      {/* Toolbar with chord palette */}
+      {/* Toolbar with node palette */}
       <div className="node-canvas-toolbar">
-        <div className="chord-palette-section">
-          <h3>Chords</h3>
-          <div className="chord-palette">
-            {chordProgression.map((chord, idx) => {
-              const actualChord = formatChordName(getChordFromProgression(songKey, chord))
-              return (
-                <div
-                  key={idx}
-                  className="palette-chord-item"
-                  onClick={(e) => handleAddChordNode(chord, e)}
-                  title={`Click to add ${actualChord} node`}
-                >
-                  {actualChord}
+        <div className="node-palette-section">
+          <h3>Add Nodes</h3>
+          <div className="node-palette">
+            {/* Add Lyrics button - draggable */}
+            <div
+              className="palette-node-item lyrics-palette-item"
+              draggable
+              onDragStart={(e) => {
+                e.dataTransfer.effectAllowed = 'copy'
+                e.dataTransfer.setData('application/node-type', 'lyric')
+              }}
+              title="Drag to canvas to add lyrics node"
+            >
+              📝 Add Lyrics
+            </div>
+            
+            {/* Section palette items - draggable */}
+            {sectionTypes.length > 0 && (
+              <div className="section-palette-group">
+                <h4>Sections</h4>
+                <div className="section-palette">
+                  {sectionTypes.map((section) => (
+                    <div
+                      key={section.type}
+                      className="palette-node-item section-palette-item"
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.effectAllowed = 'copy'
+                        e.dataTransfer.setData('application/node-type', 'section')
+                        e.dataTransfer.setData('application/section-type', section.type)
+                        e.dataTransfer.setData('application/section-label', section.label)
+                      }}
+                      title={`Drag to canvas to add ${section.label} section`}
+                    >
+                      + {section.label}
+                    </div>
+                  ))}
                 </div>
-              )
-            })}
+              </div>
+            )}
+            
+            {/* Chord palette items - draggable */}
+            <div className="chord-palette-group">
+              <h4>Chords</h4>
+              <div className="chord-palette">
+                {chordProgression.map((chord, idx) => {
+                  const actualChord = formatChordName(getChordFromProgression(songKey, chord))
+                  return (
+                    <div
+                      key={idx}
+                      className="palette-node-item chord-palette-item"
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.effectAllowed = 'copy'
+                        e.dataTransfer.setData('application/node-type', 'chord')
+                        e.dataTransfer.setData('application/chord', chord)
+                      }}
+                      title={`Drag to canvas to add ${actualChord} node`}
+                    >
+                      {actualChord}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
           </div>
         </div>
-        <div className="toolbar-hint">
-          <span>💡 Click on canvas to add lyrics • Drag chords from palette</span>
+        <div className="toolbar-controls">
+          <button
+            className="add-row-btn"
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              setNumberOfRows(prev => prev + 1)
+            }}
+            title="Add a row to expand the grid"
+          >
+            + Add Row
+          </button>
+          <span className="toolbar-hint">
+            💡 Drag nodes from palette onto canvas to add them
+          </span>
         </div>
       </div>
 
       {/* Canvas with grid background */}
       <div
         ref={canvasRef}
-        className="node-canvas"
+        className={`node-canvas ${isDraggingOverCanvas ? 'drag-over' : ''}`}
         style={{
-          width: `${canvasWidth}px`,
-          height: `${canvasHeight}px`,
           '--grid-size': `${gridSize}px`,
           '--beats-per-bar': beatsPerBar,
         } as React.CSSProperties}
-        onClick={handleCanvasClick}
+        onDragEnter={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          if (e.dataTransfer.types.includes('application/node-type')) {
+            setIsDraggingOverCanvas(true)
+          }
+        }}
+        onDragOver={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          if (e.dataTransfer.types.includes('application/node-type')) {
+            e.dataTransfer.dropEffect = 'copy'
+            setIsDraggingOverCanvas(true)
+          }
+        }}
+        onDragLeave={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          // Only clear if we're actually leaving the canvas
+          const rect = canvasRef.current?.getBoundingClientRect()
+          if (rect) {
+            const x = e.clientX
+            const y = e.clientY
+            if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+              setIsDraggingOverCanvas(false)
+            }
+          }
+        }}
+        onDrop={(e) => {
+          setIsDraggingOverCanvas(false)
+          handleCanvasDrop(e)
+        }}
       >
-        {/* Static grid background */}
-        <div className="canvas-grid-background">
+        <div
+          className="canvas-inner"
+          style={{
+            width: `${canvasWidth}px`,
+            height: `${canvasHeight}px`,
+            position: 'relative',
+          }}
+        >
+          {/* Static grid background */}
+          <div className="canvas-grid-background">
           {Array.from({ length: totalBars }).map((_, barIdx) => {
             const barX = (barIdx % barsPerRow) * beatsPerBar * gridSize
-            const barY = Math.floor(barIdx / barsPerRow) * 200
+            const barY = Math.floor(barIdx / barsPerRow) * rowHeight
             const isActiveBar = isMetronomePlaying && currentBar === barIdx
             const activeBeatInBar = isMetronomePlaying ? getBeatInBar(currentBeat) : -1
             return (
@@ -288,10 +413,10 @@ const NodeBasedCanvas = ({
               </div>
             )
           })}
-        </div>
+          </div>
 
-        {/* Nodes layer */}
-        <div className="canvas-nodes-layer">
+          {/* Nodes layer */}
+          <div className="canvas-nodes-layer">
           {nodes.map((node) => (
             <div
               key={node.id}
@@ -304,12 +429,31 @@ const NodeBasedCanvas = ({
                 zIndex: node.zIndex || 10,
               }}
               onMouseDown={(e) => {
-                if (node.type === 'lyric') {
+                if (node.type === 'lyric' || node.type === 'section') {
                   handleNodeDragStart(e, node.id)
                 }
               }}
             >
-              {node.type === 'lyric' ? (
+              {node.type === 'section' ? (
+                <div className="section-node-wrapper">
+                  <button
+                    className="node-delete-btn section-delete-btn"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleDeleteNode(node.id)
+                    }}
+                    title="Delete node"
+                  >
+                    ×
+                  </button>
+                  <div
+                    className="node-content-display section-node-content"
+                    onMouseDown={(e) => handleNodeDragStart(e, node.id)}
+                  >
+                    {node.content}
+                  </div>
+                </div>
+              ) : node.type === 'lyric' ? (
                 <>
                   <div className="node-header">
                     <span className="node-type-label">Lyrics</span>
@@ -355,30 +499,28 @@ const NodeBasedCanvas = ({
                   />
                 </>
               ) : (
-                <>
-                  <div className="node-header">
-                    <span className="node-type-label">Chord</span>
-                    <button
-                      className="node-delete-btn"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleDeleteNode(node.id)
-                      }}
-                      title="Delete node"
-                    >
-                      ×
-                    </button>
-                  </div>
+                <div className="chord-node-wrapper">
+                  <button
+                    className="node-delete-btn chord-delete-btn"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleDeleteNode(node.id)
+                    }}
+                    title="Delete node"
+                  >
+                    ×
+                  </button>
                   <div
                     className="node-content-display chord-node-content"
                     onMouseDown={(e) => handleNodeDragStart(e, node.id)}
                   >
                     {formatChordName(node.content)}
                   </div>
-                </>
+                </div>
               )}
             </div>
           ))}
+        </div>
         </div>
       </div>
     </div>
