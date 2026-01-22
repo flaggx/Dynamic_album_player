@@ -286,8 +286,8 @@ const Admin = () => {
                           .map((user: any) => (
                             <div key={user.id} className="admin-item">
                               <div className="admin-item-info">
-                                <h3>{user.name || user.email}</h3>
-                                <p>Email: {user.email}</p>
+                                <h3 title={user.name || user.email}>{user.name || user.email}</h3>
+                                <p title={user.email}>Email: {user.email}</p>
                                 {user.banned ? (
                                   <>
                                     <p className="admin-item-meta banned">BANNED</p>

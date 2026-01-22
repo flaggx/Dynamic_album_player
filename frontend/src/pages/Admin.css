@@ -74,6 +74,8 @@
   background-color: var(--spotify-gray);
   border-radius: 8px;
   transition: background-color 0.2s;
+  gap: 16px; /* Space between info and actions */
+  overflow: hidden; /* Prevent content from overflowing */
 }
 
 .admin-item:hover {
@@ -82,6 +84,8 @@
 
 .admin-item-info {
   flex: 1;
+  min-width: 0; /* Allows flex item to shrink below content size */
+  margin-right: 16px; /* Space between info and actions */
 }
 
 .admin-item-info h3 {
@@ -89,12 +93,20 @@
   font-weight: 600;
   margin-bottom: 4px;
   color: var(--spotify-white);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
 }
 
 .admin-item-info p {
   font-size: 14px;
   color: var(--spotify-light-gray);
   margin: 4px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
 }
 
 .admin-item-meta {
@@ -174,6 +186,8 @@
   display: flex;
   gap: 8px;
   align-items: center;
+  flex-shrink: 0; /* Prevent actions from shrinking */
+  min-width: fit-content; /* Ensure buttons stay visible */
 }
 
 .admin-ban-form {
@@ -190,6 +204,8 @@
   color: var(--spotify-white);
   font-size: 14px;
   width: 200px;
+  min-width: 150px; /* Minimum width to keep it usable */
+  max-width: 200px; /* Prevent it from growing too large */
 }
 
 .admin-ban-input:focus {
