@@ -390,6 +390,10 @@ export const adminApi = {
   getAllUsers: async (): Promise<any[]> => {
     return apiCall<any[]>('/api/admin/users')
   },
+
+  deleteUser: async (userId: string): Promise<void> => {
+    await apiCall(`/api/admin/users/${userId}`, { method: 'DELETE' })
+  },
 }
 
 // Premium API

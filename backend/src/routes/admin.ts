@@ -178,6 +178,7 @@ router.get('/users/banned', async (req: AuthRequest, res, next) => {
     )
     res.json(bannedUsers)
   } catch (error) {
+    console.error('Error fetching banned users:', error)
     next(error)
   }
 })
@@ -189,6 +190,67 @@ router.get('/users', async (req: AuthRequest, res, next) => {
       'SELECT id, email, name, banned, banned_reason, banned_at, created_at FROM users ORDER BY created_at DESC'
     )
     res.json(users)
+  } catch (error) {
+    console.error('Error fetching all users:', error)
+    next(error)
+  }
+})
+
+// Delete user (removes user and all associated data)
+router.delete('/users/:id', async (req: AuthRequest, res, next) => {
+  try {
+    const { id } = req.params
+
+    // Get user to verify it exists
+    const user = await dbGet('SELECT * FROM users WHERE id = ?', [id])
+    if (!user) {
+      throw new CustomError('User not found', 404)
+    }
+
+    // Get all albums by this user to delete their files
+    const albums = await dbAll('SELECT id, cover_image FROM albums WHERE artist_id = ?', [id])
+
+    // Delete album cover images and associated songs/tracks
+    for (const album of albums) {
+      // Delete album cover image if exists
+      if (album.cover_image) {
+        const coverPath = path.join(process.env.UPLOAD_DIR || './uploads', album.cover_image)
+        try {
+          if (fs.existsSync(coverPath)) {
+            fs.unlinkSync(coverPath)
+          }
+        } catch (error) {
+          console.error(`Error deleting album cover image ${coverPath}:`, error)
+        }
+      }
+
+      // Get all songs in this album to delete their tracks
+      const songs = await dbAll('SELECT id FROM songs WHERE album_id = ?', [album.id])
+
+      // Delete track files
+      for (const song of songs) {
+        const tracks = await dbAll('SELECT file_path FROM tracks WHERE song_id = ?', [song.id])
+        for (const track of tracks) {
+          const filePath = path.join(process.env.UPLOAD_DIR || './uploads', track.file_path)
+          try {
+            if (fs.existsSync(filePath)) {
+              fs.unlinkSync(filePath)
+            }
+          } catch (error) {
+            console.error(`Error deleting track file ${filePath}:`, error)
+          }
+        }
+      }
+    }
+
+    // Delete albums (this will cascade delete songs and tracks via foreign keys)
+    await dbRun('DELETE FROM albums WHERE artist_id = ?', [id])
+
+    // Delete user (this will cascade delete subscriptions, likes, favorites via foreign keys)
+    // stripe_events.user_id will be set to NULL automatically
+    await dbRun('DELETE FROM users WHERE id = ?', [id])
+
+    res.json({ message: 'User deleted successfully' })
   } catch (error) {
     next(error)
   }

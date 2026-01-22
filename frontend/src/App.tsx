@@ -253,6 +253,7 @@ function App() {
         authorizationParams={{
           redirect_uri: redirectUri,
           audience: audience,
+          scope: 'openid profile email', // Explicitly request email scope for all providers
         }}
         useRefreshTokens={true}
         cacheLocation="localstorage"

@@ -18,6 +18,9 @@ export const migrateDatabase = async (): Promise<void> => {
         const columnNames = tableInfo.map((col: any) => col.name)
 
         const columnsToAdd = [
+          { name: 'banned', type: 'INTEGER DEFAULT 0' },
+          { name: 'banned_reason', type: 'TEXT' },
+          { name: 'banned_at', type: 'DATETIME' },
           { name: 'stripe_customer_id', type: 'TEXT' },
           { name: 'stripe_subscription_id', type: 'TEXT' },
           { name: 'subscription_status', type: 'TEXT DEFAULT "free"' },

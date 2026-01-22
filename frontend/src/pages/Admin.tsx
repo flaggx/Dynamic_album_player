@@ -155,6 +155,24 @@ const Admin = () => {
     }
   }
 
+  const handleDeleteUser = async (userId: string, userEmail: string, userName?: string) => {
+    const displayName = userName || userEmail
+    if (!confirm(`Are you sure you want to delete ${displayName}?\n\n⚠️ WARNING: This will permanently delete:\n- User account\n- All albums and songs created by this user\n- All subscriptions, likes, and favorites\n\nThis action cannot be undone.`)) {
+      return
+    }
+
+    setDeleting(userId)
+    try {
+      await adminApi.deleteUser(userId)
+      toast.success('User deleted successfully')
+      setAllUsers(allUsers.filter(u => u.id !== userId))
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete user')
+    } finally {
+      setDeleting(null)
+    }
+  }
+
   return (
     <div className="spotify-app">
       <Sidebar />
@@ -282,30 +300,40 @@ const Admin = () => {
                                 )}
                               </div>
                               <div className="admin-item-actions">
-                                {user.banned ? (
-                                  <button
-                                    className="admin-button success"
-                                    onClick={() => handleUnbanUser(user.id, user.email)}
-                                  >
-                                    Unban
-                                  </button>
-                                ) : (
-                                  <div className="admin-ban-form">
-                                    <input
-                                      type="text"
-                                      placeholder="Ban reason (optional)"
-                                      value={banReason[user.id] || ''}
-                                      onChange={(e) => setBanReason({ ...banReason, [user.id]: e.target.value })}
-                                      className="admin-ban-input"
-                                    />
+                                <div style={{ display: 'flex', gap: '0.5rem', flexDirection: 'column', alignItems: 'flex-end' }}>
+                                  {user.banned ? (
                                     <button
-                                      className="admin-button danger"
-                                      onClick={() => handleBanUser(user.id, user.email)}
+                                      className="admin-button success"
+                                      onClick={() => handleUnbanUser(user.id, user.email)}
                                     >
-                                      Ban
+                                      Unban
                                     </button>
-                                  </div>
-                                )}
+                                  ) : (
+                                    <div className="admin-ban-form" style={{ display: 'flex', gap: '0.5rem' }}>
+                                      <input
+                                        type="text"
+                                        placeholder="Ban reason (optional)"
+                                        value={banReason[user.id] || ''}
+                                        onChange={(e) => setBanReason({ ...banReason, [user.id]: e.target.value })}
+                                        className="admin-ban-input"
+                                      />
+                                      <button
+                                        className="admin-button danger"
+                                        onClick={() => handleBanUser(user.id, user.email)}
+                                      >
+                                        Ban
+                                      </button>
+                                    </div>
+                                  )}
+                                  <button
+                                    className="admin-button danger"
+                                    onClick={() => handleDeleteUser(user.id, user.email, user.name)}
+                                    disabled={deleting === user.id}
+                                    style={{ marginTop: '0.5rem' }}
+                                  >
+                                    {deleting === user.id ? 'Deleting...' : 'Delete User'}
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           ))}
