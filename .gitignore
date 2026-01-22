@@ -10,10 +10,26 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
-*.local
+.vite
+.vercel
+
+# Env files (never commit secrets)
 .env
 .env.local
 .env.production
+.env.development
+.env.test
+.env.*.local
+
+# Next.js (build output anywhere in the repo)
+.next/
+out/
+
+# TypeScript incremental build
+*.tsbuildinfo
+
+# Windows / WSL: NTFS Zone.Identifier alternate-stream files
+*:Zone.Identifier
 
 # Editor directories and files
 .vscode/*
@@ -29,7 +45,6 @@ dist-ssr
 # Documentation files (generated/analysis)
 IMPLEMENTATION_STATUS.md
 MVP_GAP_ANALYSIS.md
-DEPLOYMENT.md
 CUSTOM_DOMAIN_SETUP.md
 BUILD_TROUBLESHOOTING.md
 CLOUDFLARE_DNS_SETUP.md
@@ -41,7 +56,4 @@ AUTH0_PRODUCTION_SETUP.md
 STRIPE_SETUP.md
 SECRETS_SETUP.md
 deploy.sh
-
-# Fly.io (optional - safe to commit, but can be ignored if preferred)
-# .fly/
 

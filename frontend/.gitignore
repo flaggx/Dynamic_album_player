@@ -1,0 +1,16 @@
+# Vercel (linked project; never commit)
+.vercel
+
+# Next.js
+.next/
+out/
+
+# Local env (see repo root .gitignore too)
+.env
+.env*.local
+
+# TypeScript
+*.tsbuildinfo
+
+# Windows / WSL NTFS junk
+*:Zone.Identifier

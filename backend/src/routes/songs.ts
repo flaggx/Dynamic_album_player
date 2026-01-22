@@ -3,17 +3,13 @@ import multer from 'multer'
 import path from 'path'
 import fs from 'fs'
 import { parseFile } from 'music-metadata'
-import { db } from '../database/init'
+import { dbRun, dbGet, dbAll } from '../database/client.js'
 import { v4 as uuidv4 } from 'uuid'
-import { promisify } from 'util'
 import { authenticate, optionalAuth, getUserId, AuthRequest } from '../middleware/auth.js'
 import { requirePremium } from '../middleware/premium.js'
 import { CustomError } from '../middleware/errorHandler'
 
 const router = express.Router()
-const dbRun = promisify(db.run.bind(db)) as (sql: string, params?: any[]) => Promise<any>
-const dbGet = promisify(db.get.bind(db)) as (sql: string, params?: any[]) => Promise<any>
-const dbAll = promisify(db.all.bind(db)) as (sql: string, params?: any[]) => Promise<any[]>
 
 // Configure multer for file uploads
 const uploadDir = process.env.UPLOAD_DIR || path.join(process.cwd(), 'uploads')
@@ -69,12 +65,9 @@ router.get('/', optionalAuth, async (req, res, next) => {
     const songs = await dbAll(`
       SELECT 
         s.*,
-        COUNT(DISTINCT l.id) as like_count,
-        COUNT(DISTINCT f.id) as favorite_count
+        (SELECT COUNT(DISTINCT l.id) FROM likes l WHERE l.song_id = s.id) as like_count,
+        (SELECT COUNT(DISTINCT f.id) FROM favorites f WHERE f.song_id = s.id) as favorite_count
       FROM songs s
-      LEFT JOIN likes l ON l.song_id = s.id
-      LEFT JOIN favorites f ON f.song_id = s.id
-      GROUP BY s.id
       ORDER BY s.created_at DESC
     `)
 
@@ -170,7 +163,7 @@ router.post('/', authenticate, requirePremium, upload.array('tracks'), async (re
       
       await dbRun(
         `INSERT INTO tracks (id, song_id, name, file_path, enabled)
-         VALUES (?, ?, ?, ?, 1)`,
+         VALUES (?, ?, ?, ?, TRUE)`,
         [trackId, songId, trackName, `/uploads/${file.filename}`]
       )
 

@@ -1,20 +1,24 @@
 import express from 'express'
-import { db } from '../database/init.js'
-import { promisify } from 'util'
+import { dbGet, dbRun } from '../database/client.js'
 import { authenticate, optionalAuth, getUserId, AuthRequest } from '../middleware/auth.js'
 import { CustomError } from '../middleware/errorHandler'
 
 const router = express.Router()
-const dbGet = promisify(db.get.bind(db)) as (sql: string, params?: any[]) => Promise<any>
-const dbRun = promisify(db.run.bind(db)) as (sql: string, params?: any[]) => Promise<any>
 
 // Get user by ID
 router.get('/:id', optionalAuth, async (req, res, next) => {
   try {
+    const viewerId = getUserId(req)
     const user = await dbGet('SELECT * FROM users WHERE id = ?', [req.params.id])
-    
+
     if (!user) {
       throw new CustomError('User not found', 404)
+    }
+
+    if (viewerId !== req.params.id) {
+      const { is_admin: _omit, ...publicUser } = user as Record<string, unknown>
+      res.json(publicUser)
+      return
     }
 
     res.json(user)

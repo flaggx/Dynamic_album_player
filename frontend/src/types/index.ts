@@ -5,6 +5,8 @@ export interface User {
   picture?: string
   bio?: string
   createdAt: string
+  /** Present when fetching your own profile (matches JWT sub) */
+  isAdmin?: boolean
 }
 
 export interface Track {

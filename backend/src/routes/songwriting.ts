@@ -1,15 +1,13 @@
 import express from 'express'
 import { v4 as uuidv4 } from 'uuid'
-import { db } from '../database/init.js'
-import { promisify } from 'util'
+import { dbRun, dbGet, dbAll } from '../database/client.js'
 import { authenticate, AuthRequest, getUserId } from '../middleware/auth.js'
 import { requirePremium } from '../middleware/premium.js'
 import { CustomError } from '../middleware/errorHandler.js'
 
 const router = express.Router()
-const dbRun = promisify(db.run.bind(db)) as (sql: string, params?: any[]) => Promise<any>
-const dbGet = promisify(db.get.bind(db)) as (sql: string, params?: any[]) => Promise<any>
-const dbAll = promisify(db.all.bind(db)) as (sql: string, params?: any[]) => Promise<any[]>
+
+const isTruthyPublic = (v: unknown): boolean => v === true || v === 1
 
 // GET /api/songwriting - Get all songs (user's own + public)
 router.get('/', authenticate, async (req: AuthRequest, res, next) => {
@@ -21,7 +19,7 @@ router.get('/', authenticate, async (req: AuthRequest, res, next) => {
 
     const songs = await dbAll(
       `SELECT * FROM songwriting_songs 
-       WHERE user_id = ? OR is_public = 1 
+       WHERE user_id = ? OR is_public = TRUE 
        ORDER BY updated_at DESC`,
       [userId]
     )
@@ -34,9 +32,9 @@ router.get('/', authenticate, async (req: AuthRequest, res, next) => {
       authorLastName: song.author_last_name || '',
       key: song.key,
       timeSignature: song.time_signature,
-      chordProgression: song.chord_progression ? JSON.parse(song.chord_progression) : null,
-      structure: JSON.parse(song.structure),
-      isPublic: song.is_public === 1,
+      chordProgression: song.chord_progression ? JSON.parse(String(song.chord_progression)) : null,
+      structure: JSON.parse(String(song.structure)),
+      isPublic: isTruthyPublic(song.is_public),
       createdAt: song.created_at,
       updatedAt: song.updated_at,
     })))
@@ -62,8 +60,7 @@ router.get('/:id', authenticate, async (req: AuthRequest, res, next) => {
       throw new CustomError('Song not found', 404)
     }
 
-    // Check if user has access (owner or public)
-    if (song.user_id !== userId && song.is_public !== 1) {
+    if (song.user_id !== userId && !isTruthyPublic(song.is_public)) {
       throw new CustomError('Access denied', 403)
     }
 
@@ -75,9 +72,9 @@ router.get('/:id', authenticate, async (req: AuthRequest, res, next) => {
       authorLastName: song.author_last_name || '',
       key: song.key,
       timeSignature: song.time_signature,
-      chordProgression: song.chord_progression ? JSON.parse(song.chord_progression) : null,
-      structure: JSON.parse(song.structure),
-      isPublic: song.is_public === 1,
+      chordProgression: song.chord_progression ? JSON.parse(String(song.chord_progression)) : null,
+      structure: JSON.parse(String(song.structure)),
+      isPublic: isTruthyPublic(song.is_public),
       createdAt: song.created_at,
       updatedAt: song.updated_at,
     })
@@ -105,7 +102,7 @@ router.post('/', authenticate, requirePremium, async (req: AuthRequest, res, nex
 
     await dbRun(
       `INSERT INTO songwriting_songs 
-       (id, user_id, title, author_first_name, author_last_name, key, time_signature, chord_progression, structure, is_public, created_at, updated_at)
+       (id, user_id, title, author_first_name, author_last_name, "key", time_signature, chord_progression, structure, is_public, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
@@ -117,7 +114,7 @@ router.post('/', authenticate, requirePremium, async (req: AuthRequest, res, nex
         timeSignature || '4/4',
         chordProgression ? JSON.stringify(chordProgression) : null,
         JSON.stringify(structure),
-        isPublic ? 1 : 0,
+        Boolean(isPublic),
         now,
         now,
       ]
@@ -168,7 +165,7 @@ router.put('/:id', authenticate, requirePremium, async (req: AuthRequest, res, n
 
     await dbRun(
       `UPDATE songwriting_songs 
-       SET title = ?, author_first_name = ?, author_last_name = ?, key = ?, time_signature = ?, chord_progression = ?, structure = ?, is_public = ?, updated_at = ?
+       SET title = ?, author_first_name = ?, author_last_name = ?, "key" = ?, time_signature = ?, chord_progression = ?, structure = ?, is_public = ?, updated_at = ?
        WHERE id = ?`,
       [
         title || song.title,
@@ -178,7 +175,7 @@ router.put('/:id', authenticate, requirePremium, async (req: AuthRequest, res, n
         timeSignature || song.time_signature,
         chordProgression ? JSON.stringify(chordProgression) : song.chord_progression,
         structure ? JSON.stringify(structure) : song.structure,
-        isPublic !== undefined ? (isPublic ? 1 : 0) : song.is_public,
+        isPublic !== undefined ? Boolean(isPublic) : song.is_public,
         now,
         req.params.id,
       ]
@@ -188,6 +185,9 @@ router.put('/:id', authenticate, requirePremium, async (req: AuthRequest, res, n
       `SELECT * FROM songwriting_songs WHERE id = ?`,
       [req.params.id]
     )
+    if (!updated) {
+      throw new CustomError('Song not found', 404)
+    }
 
     res.json({
       id: updated.id,
@@ -197,9 +197,9 @@ router.put('/:id', authenticate, requirePremium, async (req: AuthRequest, res, n
       authorLastName: updated.author_last_name || '',
       key: updated.key,
       timeSignature: updated.time_signature,
-      chordProgression: updated.chord_progression ? JSON.parse(updated.chord_progression) : null,
-      structure: JSON.parse(updated.structure),
-      isPublic: updated.is_public === 1,
+      chordProgression: updated.chord_progression ? JSON.parse(String(updated.chord_progression)) : null,
+      structure: JSON.parse(String(updated.structure)),
+      isPublic: isTruthyPublic(updated.is_public),
       createdAt: updated.created_at,
       updatedAt: updated.updated_at,
     })
@@ -238,4 +238,3 @@ router.delete('/:id', authenticate, requirePremium, async (req: AuthRequest, res
 })
 
 export default router
-

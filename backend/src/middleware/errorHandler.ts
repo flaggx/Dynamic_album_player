@@ -26,8 +26,8 @@ export const errorHandler = (
     return res.status(err.statusCode).json({ error: err.message })
   }
 
-  // JWT errors
-  if (err.name === 'UnauthorizedError') {
+  // JWT errors (legacy express-jwt + jsonwebtoken)
+  if (err.name === 'UnauthorizedError' || err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError') {
     return res.status(401).json({ error: 'Invalid or expired token' })
   }
 
@@ -49,8 +49,8 @@ export const errorHandler = (
     return res.status(400).json({ error: err.message })
   }
 
-  // SQLite database locked errors
-  if ((err as any).code === 'SQLITE_BUSY' || err.message?.includes('database is locked')) {
+  // SQLite / Postgres busy or contention
+  if ((err as any).code === 'SQLITE_BUSY' || (err as any).code === '40P01' || err.message?.includes('database is locked')) {
     return res.status(503).json({ error: 'Database is temporarily busy. Please try again.' })
   }
 

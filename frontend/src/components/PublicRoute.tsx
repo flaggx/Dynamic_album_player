@@ -1,5 +1,7 @@
+'use client'
+
 import { ReactNode } from 'react'
-import { useAuth0 } from '@auth0/auth0-react'
+import { useAuth } from '../contexts/AuthContext'
 
 interface PublicRouteProps {
   children: ReactNode
@@ -10,25 +12,24 @@ interface PublicRouteProps {
  * The children components should handle unauthenticated state gracefully.
  */
 const PublicRoute = ({ children }: PublicRouteProps) => {
-  const { isLoading } = useAuth0()
+  const { isLoading } = useAuth()
 
-  // Show loading only while Auth0 is initializing
   if (isLoading) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '100vh' 
-      }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
+        }}
+      >
         <div>Loading...</div>
       </div>
     )
   }
 
-  // Always render children - no authentication required
   return <>{children}</>
 }
 
 export default PublicRoute
-

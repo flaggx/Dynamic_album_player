@@ -1,20 +1,13 @@
 import { useState, useRef, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { useAuth0 } from '@auth0/auth0-react'
+import Link from 'next/link'
+import { useAuth, type AppUser } from '../contexts/AuthContext'
 import { useIsAdmin } from '../utils/admin'
 import { premiumApi } from '../services/api'
 import { PremiumStatus } from '../types'
 import './ProfileDropdown.css'
 
 interface ProfileDropdownProps {
-  user: {
-    picture?: string
-    name?: string
-    email?: string
-    nickname?: string
-    given_name?: string
-    family_name?: string
-  }
+  user: AppUser
 }
 
 const ProfileDropdown = ({ user }: ProfileDropdownProps) => {
@@ -22,13 +15,11 @@ const ProfileDropdown = ({ user }: ProfileDropdownProps) => {
   const [imageError, setImageError] = useState(false)
   const [premiumStatus, setPremiumStatus] = useState<PremiumStatus | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
-  const { logout, user: auth0User } = useAuth0()
+  const { logout } = useAuth()
   const isAdmin = useIsAdmin()
-  // const navigate = useNavigate() // Reserved for future use
-
   useEffect(() => {
     const loadPremiumStatus = async () => {
-      if (!auth0User?.sub) return
+      if (!user.sub) return
       try {
         const status = await premiumApi.getStatus()
         setPremiumStatus(status)
@@ -37,18 +28,13 @@ const ProfileDropdown = ({ user }: ProfileDropdownProps) => {
       }
     }
     loadPremiumStatus()
-  }, [auth0User])
+  }, [user])
 
   // Helper function to get display name with fallbacks
   const getDisplayName = (): string => {
     if (user.name) return user.name
-    if (user.nickname) return user.nickname
-    if (user.given_name && user.family_name) return `${user.given_name} ${user.family_name}`
-    if (user.given_name) return user.given_name
     if (user.email) {
-      // Extract name from email (part before @)
       const emailName = user.email.split('@')[0]
-      // Capitalize first letter
       return emailName.charAt(0).toUpperCase() + emailName.slice(1)
     }
     return 'User'
@@ -73,7 +59,7 @@ const ProfileDropdown = ({ user }: ProfileDropdownProps) => {
   }, [isOpen])
 
   const handleLogout = () => {
-    logout({ logoutParams: { returnTo: window.location.origin } })
+    void logout()
   }
 
   return (
@@ -129,7 +115,7 @@ const ProfileDropdown = ({ user }: ProfileDropdownProps) => {
           <div className="dropdown-divider"></div>
 
           <Link
-            to="/profile"
+            href="/profile"
             className="dropdown-item"
             onClick={() => setIsOpen(false)}
           >
@@ -138,7 +124,7 @@ const ProfileDropdown = ({ user }: ProfileDropdownProps) => {
           </Link>
 
           <Link
-            to="/my-albums"
+            href="/my-albums"
             className="dropdown-item"
             onClick={() => setIsOpen(false)}
           >
@@ -147,7 +133,7 @@ const ProfileDropdown = ({ user }: ProfileDropdownProps) => {
           </Link>
 
           <Link
-            to="/my-favorites"
+            href="/my-favorites"
             className="dropdown-item"
             onClick={() => setIsOpen(false)}
           >
@@ -158,7 +144,7 @@ const ProfileDropdown = ({ user }: ProfileDropdownProps) => {
           <div className="dropdown-divider"></div>
 
           <Link
-            to="/premium"
+            href="/premium"
             className="dropdown-item"
             onClick={() => setIsOpen(false)}
           >
@@ -167,7 +153,7 @@ const ProfileDropdown = ({ user }: ProfileDropdownProps) => {
           </Link>
 
           <Link
-            to="/settings"
+            href="/settings"
             className="dropdown-item"
             onClick={() => setIsOpen(false)}
           >
@@ -179,7 +165,7 @@ const ProfileDropdown = ({ user }: ProfileDropdownProps) => {
             <>
               <div className="dropdown-divider"></div>
               <Link
-                to="/admin"
+                href="/admin"
                 className="dropdown-item"
                 onClick={() => setIsOpen(false)}
               >

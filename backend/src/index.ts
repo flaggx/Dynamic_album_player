@@ -12,7 +12,7 @@ import likeRoutes from './routes/likes'
 import favoriteRoutes from './routes/favorites'
 import adminRoutes from './routes/admin'
 import songwritingRoutes from './routes/songwriting'
-import { initDatabase } from './database/init'
+import { initDatabase } from './database/client'
 import { migrateDatabase } from './database/migrate'
 import { errorHandler } from './middleware/errorHandler'
 

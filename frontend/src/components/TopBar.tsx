@@ -1,36 +1,32 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useRouter } from 'next/navigation'
 import ProfileDropdown from './ProfileDropdown'
-import { useAuth0 } from '@auth0/auth0-react'
+import { useAuth } from '../contexts/AuthContext'
 import { useSidebar } from '../contexts/SidebarContext'
 import './TopBar.css'
 
 const TopBar = () => {
-  const navigate = useNavigate()
-  const { user, isAuthenticated, loginWithRedirect } = useAuth0()
+  const router = useRouter()
+  const { user, isAuthenticated, loginWithRedirect } = useAuth()
   const { toggleSidebar } = useSidebar()
   const [searchQuery, setSearchQuery] = useState('')
 
   const handleLogin = () => {
-    loginWithRedirect({
-      appState: {
-        returnTo: window.location.pathname,
-      },
-    })
+    void loginWithRedirect()
   }
 
   const handleBack = () => {
-    navigate(-1)
+    router.back()
   }
 
   const handleForward = () => {
-    navigate(1)
+    router.forward()
   }
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
     if (searchQuery.trim()) {
-      navigate(`/discover?search=${encodeURIComponent(searchQuery.trim())}`)
+      router.push(`/discover?search=${encodeURIComponent(searchQuery.trim())}`)
       setSearchQuery('')
     }
   }
@@ -42,22 +38,22 @@ const TopBar = () => {
   return (
     <div className="top-bar">
       <div className="top-bar-left">
-        <button 
+        <button
           className="nav-button hamburger-menu"
           onClick={toggleSidebar}
           aria-label="Toggle menu"
         >
           ☰
         </button>
-        <button 
-          className="nav-button prev" 
+        <button
+          className="nav-button prev"
           onClick={handleBack}
           aria-label="Go back"
         >
           ‹
         </button>
-        <button 
-          className="nav-button next" 
+        <button
+          className="nav-button next"
           onClick={handleForward}
           aria-label="Go forward"
         >
@@ -79,7 +75,7 @@ const TopBar = () => {
         {isAuthenticated && user ? (
           <ProfileDropdown user={user} />
         ) : (
-          <button className="login-button" onClick={handleLogin}>
+          <button type="button" className="login-button" onClick={handleLogin}>
             Log in
           </button>
         )}
@@ -89,4 +85,3 @@ const TopBar = () => {
 }
 
 export default TopBar
-

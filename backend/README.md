@@ -1,129 +1,45 @@
-# Backend API
+# Backend API (optional / legacy)
 
-REST API backend for Dynamic Album Player built with Node.js, Express, and SQLite.
+**Production** uses the **Next.js** app in `frontend/` with **Supabase** (Postgres, RLS, Storage) and **Stripe** on Vercel API routes—see `SUPABASE_ONLY.md`. This Express server is **not required** for that path; keep it only if you want a standalone API for local tools or migration.
+
+---
+
+REST API for Dynamic Album Player: Node.js, Express, PostgreSQL (e.g. Supabase), Supabase JWT auth.
 
 ## Features
 
-- 🎵 Album and song management
-- 🎛️ Track upload and storage
-- 👥 User management
-- ❤️ Likes and favorites
-- 🔔 Subscriptions
-- 📁 File upload handling for audio tracks
-- 🗄️ SQLite database
+- Album and song management
+- Track upload and storage (local `UPLOAD_DIR` by default)
+- Users, likes, favorites, subscriptions
+- Stripe hooks for premium (optional)
 
 ## Tech Stack
 
-- **Runtime**: Node.js
+- **Runtime**: Node.js 20+
 - **Framework**: Express
-- **Database**: SQLite
+- **Database**: PostgreSQL (`DATABASE_URL`)
+- **Auth**: Supabase-issued JWTs (`SUPABASE_URL`; optional `SUPABASE_JWT_SECRET` for HS256, else JWKS)
 - **Language**: TypeScript
-- **File Upload**: Multer
 
 ## Development
 
-### Prerequisites
+1. `npm install`
+2. `cp .env.example .env` and fill in `DATABASE_URL`, `SUPABASE_URL`, and either `SUPABASE_JWT_SECRET` (HS256) or leave it blank to use JWKS (ES256/RS256), etc.
+3. `npm run dev` — default `http://localhost:3001`
 
-- Node.js 20+ and npm
+## API Endpoints (summary)
 
-### Setup
+- **Albums** — `GET/POST /api/albums`, `GET/PUT/DELETE /api/albums/:id`, `GET /api/albums/artist/:artistId`
+- **Songs** — `GET/POST /api/songs`, `GET/PUT/DELETE /api/songs/:id`, `GET /api/songs/album/:albumId`
+- **Users** — `GET /api/users/:id`, `POST /api/users`
+- **Subscriptions, likes, favorites** — under `/api/subscriptions`, `/api/likes`, `/api/favorites`
+- **Premium / admin / songwriting** — `/api/premium`, `/api/admin`, `/api/songwriting`
 
-1. Install dependencies:
-```bash
-npm install
-```
+## Production
 
-2. Create `.env` file:
-```bash
-cp .env.example .env
-```
-
-3. Update `.env` with your configuration:
-```
-PORT=3001
-NODE_ENV=development
-JWT_SECRET=your-secret-key
-DATABASE_PATH=./data/database.sqlite
-UPLOAD_DIR=./uploads
-MAX_FILE_SIZE=10485760
-CORS_ORIGIN=http://localhost:3000
-```
-
-4. Start development server:
-```bash
-npm run dev
-```
-
-The API will be available at `http://localhost:3001`
-
-## API Endpoints
-
-### Albums
-- `GET /api/albums` - Get all albums
-- `GET /api/albums/:id` - Get album by ID
-- `GET /api/albums/artist/:artistId` - Get albums by artist
-- `POST /api/albums` - Create album
-- `PUT /api/albums/:id` - Update album
-- `DELETE /api/albums/:id` - Delete album
-
-### Songs
-- `GET /api/songs` - Get all songs
-- `GET /api/songs/:id` - Get song by ID (with tracks)
-- `GET /api/songs/album/:albumId` - Get songs by album
-- `POST /api/songs` - Create song with tracks (multipart/form-data)
-- `PUT /api/songs/:id` - Update song
-- `DELETE /api/songs/:id` - Delete song
-
-### Users
-- `GET /api/users/:id` - Get user by ID
-- `POST /api/users` - Create or update user
-
-### Subscriptions
-- `GET /api/subscriptions/user/:userId` - Get user subscriptions
-- `GET /api/subscriptions/check/:userId/:artistId` - Check subscription
-- `POST /api/subscriptions` - Subscribe to artist
-- `DELETE /api/subscriptions/:userId/:artistId` - Unsubscribe
-
-### Likes
-- `GET /api/likes/song/:songId/count` - Get like count
-- `GET /api/likes/check/:userId/:songId` - Check if liked
-- `POST /api/likes/toggle` - Toggle like
-
-### Favorites
-- `GET /api/favorites/user/:userId` - Get user favorites
-- `GET /api/favorites/song/:songId/count` - Get favorite count
-- `GET /api/favorites/check/:userId/:songId` - Check if favorited
-- `POST /api/favorites/toggle` - Toggle favorite
-
-## Production Build
-
-Build for production:
 ```bash
 npm run build
 npm start
 ```
 
-## Project Structure
-
-```
-backend/
-├── src/
-│   ├── database/
-│   │   └── init.ts          # Database initialization
-│   ├── routes/
-│   │   ├── albums.ts        # Album routes
-│   │   ├── songs.ts         # Song routes
-│   │   ├── users.ts         # User routes
-│   │   ├── subscriptions.ts # Subscription routes
-│   │   ├── likes.ts         # Like routes
-│   │   └── favorites.ts     # Favorite routes
-│   └── index.ts             # Express server
-├── data/                     # SQLite database (created automatically)
-├── uploads/                  # Uploaded audio files (created automatically)
-├── package.json
-└── tsconfig.json
-```
-
-## License
-
-MIT
+Serve behind HTTPS in production; set `CORS_ORIGIN` to your real frontend origin.

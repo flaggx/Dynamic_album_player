@@ -1,15 +1,16 @@
 import express from 'express'
-import { db } from '../database/init.js'
-import { promisify } from 'util'
+import { dbGet, dbRun, dbAll } from '../database/client.js'
 import { authenticate, requireAdmin, AuthRequest } from '../middleware/auth.js'
 import { CustomError } from '../middleware/errorHandler.js'
 import fs from 'fs'
 import path from 'path'
 
+/** DB rows are `Record<string, unknown>`; paths must be strings for `path.join`. */
+function uploadRelativePath(value: unknown): string | null {
+  return typeof value === 'string' && value.length > 0 ? value : null
+}
+
 const router = express.Router()
-const dbGet = promisify(db.get.bind(db)) as (sql: string, params?: any[]) => Promise<any>
-const dbRun = promisify(db.run.bind(db)) as (sql: string, params?: any[]) => Promise<any>
-const dbAll = promisify(db.all.bind(db)) as (sql: string, params?: any[]) => Promise<any[]>
 
 // All admin routes require authentication and admin role
 router.use(authenticate, requireAdmin)
@@ -32,7 +33,9 @@ router.delete('/albums/:id', async (req: AuthRequest, res, next) => {
     for (const song of songs) {
       const tracks = await dbAll('SELECT file_path FROM tracks WHERE song_id = ?', [song.id])
       for (const track of tracks) {
-        const filePath = path.join(process.env.UPLOAD_DIR || './uploads', track.file_path)
+        const rel = uploadRelativePath(track.file_path)
+        if (!rel) continue
+        const filePath = path.join(process.env.UPLOAD_DIR || './uploads', rel)
         try {
           if (fs.existsSync(filePath)) {
             fs.unlinkSync(filePath)
@@ -44,8 +47,9 @@ router.delete('/albums/:id', async (req: AuthRequest, res, next) => {
     }
 
     // Delete album cover image if exists
-    if (album.cover_image) {
-      const coverPath = path.join(process.env.UPLOAD_DIR || './uploads', album.cover_image)
+    const albumCover = uploadRelativePath(album.cover_image)
+    if (albumCover) {
+      const coverPath = path.join(process.env.UPLOAD_DIR || './uploads', albumCover)
       try {
         if (fs.existsSync(coverPath)) {
           fs.unlinkSync(coverPath)
@@ -78,7 +82,9 @@ router.delete('/songs/:id', async (req: AuthRequest, res, next) => {
     // Delete track files
     const tracks = await dbAll('SELECT file_path FROM tracks WHERE song_id = ?', [id])
     for (const track of tracks) {
-      const filePath = path.join(process.env.UPLOAD_DIR || './uploads', track.file_path)
+      const rel = uploadRelativePath(track.file_path)
+      if (!rel) continue
+      const filePath = path.join(process.env.UPLOAD_DIR || './uploads', rel)
       try {
         if (fs.existsSync(filePath)) {
           fs.unlinkSync(filePath)
@@ -89,8 +95,9 @@ router.delete('/songs/:id', async (req: AuthRequest, res, next) => {
     }
 
     // Delete song cover image if exists
-    if (song.cover_image) {
-      const coverPath = path.join(process.env.UPLOAD_DIR || './uploads', song.cover_image)
+    const songCover = uploadRelativePath(song.cover_image)
+    if (songCover) {
+      const coverPath = path.join(process.env.UPLOAD_DIR || './uploads', songCover)
       try {
         if (fs.existsSync(coverPath)) {
           fs.unlinkSync(coverPath)
@@ -213,8 +220,9 @@ router.delete('/users/:id', async (req: AuthRequest, res, next) => {
     // Delete album cover images and associated songs/tracks
     for (const album of albums) {
       // Delete album cover image if exists
-      if (album.cover_image) {
-        const coverPath = path.join(process.env.UPLOAD_DIR || './uploads', album.cover_image)
+      const userAlbumCover = uploadRelativePath(album.cover_image)
+      if (userAlbumCover) {
+        const coverPath = path.join(process.env.UPLOAD_DIR || './uploads', userAlbumCover)
         try {
           if (fs.existsSync(coverPath)) {
             fs.unlinkSync(coverPath)
@@ -231,7 +239,9 @@ router.delete('/users/:id', async (req: AuthRequest, res, next) => {
       for (const song of songs) {
         const tracks = await dbAll('SELECT file_path FROM tracks WHERE song_id = ?', [song.id])
         for (const track of tracks) {
-          const filePath = path.join(process.env.UPLOAD_DIR || './uploads', track.file_path)
+          const rel = uploadRelativePath(track.file_path)
+          if (!rel) continue
+          const filePath = path.join(process.env.UPLOAD_DIR || './uploads', rel)
           try {
             if (fs.existsSync(filePath)) {
               fs.unlinkSync(filePath)

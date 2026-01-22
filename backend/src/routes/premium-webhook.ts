@@ -1,12 +1,9 @@
 import express from 'express'
 import Stripe from 'stripe'
-import { db } from '../database/init.js'
+import { dbRun, dbGet } from '../database/client.js'
 import { v4 as uuidv4 } from 'uuid'
-import { promisify } from 'util'
 
 const router = express.Router()
-const dbRun = promisify(db.run.bind(db)) as (sql: string, params?: any[]) => Promise<any>
-const dbGet = promisify(db.get.bind(db)) as (sql: string, params?: any[]) => Promise<any>
 
 // Initialize Stripe
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY
@@ -162,7 +159,7 @@ router.post('/', express.raw({ type: 'application/json' }), async (req, res) => 
     }
 
     // Mark event as processed
-    await dbRun('UPDATE stripe_events SET processed = 1 WHERE id = ?', [eventId])
+    await dbRun('UPDATE stripe_events SET processed = TRUE WHERE id = ?', [eventId])
 
     res.json({ received: true })
   } catch (error) {

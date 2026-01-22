@@ -4,30 +4,28 @@ A web application that allows creators to release an album where users can selec
 
 ## Features
 
-- 🎵 Multi-track audio playback with Web Audio API
-- 🎛️ Real-time track toggling (enable/disable individual tracks)
-- 🔐 Authentication with Auth0
-- 🎨 Modern, responsive UI
-- 🐳 Docker deployment ready
-- ⚡ Built with React + TypeScript + Vite
+- Multi-track audio playback with Web Audio API
+- Real-time track toggling (enable/disable individual tracks)
+- Authentication with Supabase
+- Modern, responsive UI
+- Built with Next.js (App Router) + React + TypeScript
 
 ## Tech Stack
 
-- **Frontend**: React 18 + TypeScript + Vite
-- **Backend**: Node.js + Express + TypeScript
-- **Database**: SQLite
-- **Authentication**: Auth0
+- **Frontend**: Next.js 15 + React 18 + TypeScript (typical deploy: [Vercel](https://vercel.com))
+- **Backend**: Node.js + Express + TypeScript (run on any Node host)
+- **Database**: PostgreSQL on [Supabase](https://supabase.com)
+- **Authentication**: Supabase Auth (JWT verified by the API)
 - **Audio**: Web Audio API
-- **Deployment**: Docker + Nginx
 
 ## Project Structure
 
 ```
 Dynamic_album_player/
-├── frontend/          # React + TypeScript frontend
-├── backend/           # Backend API (coming soon)
-├── docker-compose.yml # Docker Compose configuration
-└── Dockerfile         # Frontend Docker configuration
+├── frontend/          # Next.js (App Router) + TypeScript
+├── backend/           # Express API
+├── supabase/          # Supabase CLI: config.toml + migrations/ (see SUPABASE_SETUP.md §2b)
+└── README.md
 ```
 
 ## Development
@@ -35,205 +33,36 @@ Dynamic_album_player/
 ### Prerequisites
 
 - Node.js 20+ and npm
+- A Supabase project — follow **[SUPABASE_SETUP.md](./SUPABASE_SETUP.md)** once, then use `backend/.env.example` and `frontend/.env.example`
 
 ### Frontend Setup
 
-1. Navigate to frontend directory:
-```bash
-cd frontend
-```
-
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Set up Auth0:
-   - Create an account at [Auth0](https://auth0.com) (free tier available)
-   - Create a new Application (Single Page Application)
-   - Go to Settings and copy your Domain and Client ID
-   - Add `http://localhost:3000` to Allowed Callback URLs, Allowed Logout URLs, and Allowed Web Origins
-   - Create a `.env` file in the frontend directory:
-   ```bash
-   cp .env.example .env
-   ```
-   - Update `.env` with your Auth0 credentials:
-   ```
-   VITE_AUTH0_DOMAIN=your-domain.auth0.com
-   VITE_AUTH0_CLIENT_ID=your-client-id
-   VITE_API_URL=http://localhost:3001
-   ```
-
-4. Start development server:
-```bash
-npm run dev
-```
-
-The app will be available at `http://localhost:3000`
+1. `cd frontend`
+2. `npm install`
+3. `cp .env.example .env.local` and set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (or `NEXT_PUBLIC_SUPABASE_ANON_KEY`), and `NEXT_PUBLIC_API_URL` (e.g. `http://localhost:3001`)
+4. `npm run dev` — **http://localhost:3000**
 
 ### Backend Setup
 
-1. Navigate to backend directory:
+1. `cd backend`
+2. `npm install`
+3. `cp .env.example .env` and set Postgres and Supabase JWT variables
+4. `npm run dev` — API at `http://localhost:3001`
+
+Set `CORS_ORIGIN` to your frontend origin (e.g. `http://localhost:3000`).
+
+### Running both
+
+Use two terminals: backend first, then frontend.
+
+## Production build
+
 ```bash
-cd backend
+cd frontend && npm run build   # Next.js output: frontend/.next/
+cd backend && npm run build     # output: backend/dist/
 ```
 
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Create `.env` file:
-```bash
-cp .env.example .env
-```
-
-4. Update `.env` with your configuration (defaults should work for development):
-```
-PORT=3001
-CORS_ORIGIN=http://localhost:3000
-```
-
-5. Start development server:
-```bash
-npm run dev
-```
-
-The API will be available at `http://localhost:3001`
-
-## Testing
-
-### Frontend Tests
-
-Run frontend tests:
-```bash
-cd frontend
-npm test
-```
-
-Run tests with UI:
-```bash
-npm run test:ui
-```
-
-Run tests with coverage:
-```bash
-npm run test:coverage
-```
-
-### Backend Tests
-
-Run backend tests:
-```bash
-cd backend
-npm test
-```
-
-Run tests with UI:
-```bash
-npm run test:ui
-```
-
-Run tests with coverage:
-```bash
-npm run test:coverage
-```
-
-### Test Structure
-
-- **Frontend**: Component tests, API service tests, integration tests
-- **Backend**: API route tests, database tests, file upload tests
-
-Tests use:
-- **Frontend**: Vitest, React Testing Library, MSW (Mock Service Worker)
-- **Backend**: Vitest, Supertest, SQLite test database
-
-### Running Both
-
-In separate terminals:
-```bash
-# Terminal 1 - Backend
-cd backend && npm run dev
-
-# Terminal 2 - Frontend
-cd frontend && npm run dev
-```
-
-### Adding Audio Tracks
-
-1. Create a `frontend/public/audio/` directory
-2. Add your audio files (e.g., `vocals.mp3`, `drums.mp3`, etc.)
-3. Upload tracks through the Create Album page in the app
-
-## Docker Deployment
-
-### Using Docker Compose (Recommended)
-
-1. Build and run:
-```bash
-docker-compose up -d
-```
-
-2. Access the app at `http://localhost:8080`
-
-3. Stop the container:
-```bash
-docker-compose down
-```
-
-### Using Docker directly
-
-1. Build the image:
-```bash
-docker build -t dynamic-album-player .
-```
-
-2. Run the container:
-```bash
-docker run -d -p 8080:80 --name dynamic-album-player dynamic-album-player
-```
-
-3. Access the app at `http://localhost:8080`
-
-4. Stop and remove:
-```bash
-docker stop dynamic-album-player
-docker rm dynamic-album-player
-```
-
-## Production Build
-
-Build frontend for production:
-```bash
-cd frontend
-npm run build
-```
-
-The production build will be in the `frontend/dist/` directory.
-
-## Project Structure
-
-```
-Dynamic_album_player/
-├── frontend/
-│   ├── src/
-│   │   ├── components/          # React components
-│   │   ├── pages/               # Page components
-│   │   ├── contexts/            # React contexts
-│   │   ├── services/            # Frontend services
-│   │   ├── types/               # TypeScript types
-│   │   ├── App.tsx              # Main app component
-│   │   └── main.tsx             # Entry point
-│   ├── public/                  # Static assets
-│   ├── package.json             # Frontend dependencies
-│   ├── vite.config.ts           # Vite configuration
-│   ├── tsconfig.json            # TypeScript configuration
-│   └── nginx.conf               # Nginx configuration
-├── backend/                     # Backend API (coming soon)
-├── Dockerfile                   # Frontend Docker build
-├── docker-compose.yml           # Docker Compose configuration
-└── README.md                    # This file
-```
+**Frontend hosting (Vercel):** set the Vercel project **Root Directory** to **`frontend`** and configure env vars as in **[frontend/README.md](./frontend/README.md)** (Deploy on Vercel).
 
 ## License
 

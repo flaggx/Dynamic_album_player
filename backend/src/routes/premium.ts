@@ -1,14 +1,24 @@
 import express from 'express'
 import Stripe from 'stripe'
-import { db } from '../database/init.js'
-import { v4 as uuidv4 } from 'uuid'
-import { promisify } from 'util'
+import { dbRun, dbGet } from '../database/client.js'
 import { authenticate, getUserId, getUserRoles, AuthRequest } from '../middleware/auth.js'
-import { CustomError } from '../middleware/errorHandler'
+import { CustomError } from '../middleware/errorHandler.js'
 
 const router = express.Router()
-const dbRun = promisify(db.run.bind(db)) as (sql: string, params?: any[]) => Promise<any>
-const dbGet = promisify(db.get.bind(db)) as (sql: string, params?: any[]) => Promise<any>
+
+function isoFromDbDate(value: unknown): string | null {
+  if (value == null) return null
+  if (value instanceof Date) return value.toISOString()
+  if (typeof value === 'string' || typeof value === 'number') {
+    const d = new Date(value)
+    return Number.isNaN(d.getTime()) ? null : d.toISOString()
+  }
+  return null
+}
+
+function nonEmptyString(value: unknown): string | undefined {
+  return typeof value === 'string' && value.length > 0 ? value : undefined
+}
 
 // Initialize Stripe
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY
@@ -49,8 +59,10 @@ router.get('/status', authenticate, async (req: AuthRequest, res, next) => {
     }
 
     // Admins are treated as premium users
-    const isPremium = isAdminUser || (user.subscription_status === 'active' && user.subscription_tier === 'premium')
-    const subscriptionEndsAt = user.subscription_ends_at ? new Date(user.subscription_ends_at).toISOString() : null
+    const isPremium =
+      isAdminUser ||
+      (user.subscription_status === 'active' && user.subscription_tier === 'premium')
+    const subscriptionEndsAt = isoFromDbDate(user.subscription_ends_at)
 
     res.json({
       isPremium,
@@ -83,12 +95,12 @@ router.post('/create-checkout-session', authenticate, async (req: AuthRequest, r
       throw new CustomError('User not found', 404)
     }
 
-    let customerId = user.stripe_customer_id
+    let customerId = nonEmptyString(user.stripe_customer_id)
 
     if (!customerId) {
       // Create Stripe customer
       const customer = await stripe.customers.create({
-        email: user.email,
+        email: nonEmptyString(user.email),
         metadata: {
           userId: userId,
         },
@@ -145,12 +157,13 @@ router.post('/create-portal-session', authenticate, async (req: AuthRequest, res
     }
 
     const user = await dbGet('SELECT * FROM users WHERE id = ?', [userId])
-    if (!user || !user.stripe_customer_id) {
+    const portalCustomerId = nonEmptyString(user?.stripe_customer_id)
+    if (!user || !portalCustomerId) {
       throw new CustomError('No active subscription found', 404)
     }
 
     const session = await stripe.billingPortal.sessions.create({
-      customer: user.stripe_customer_id,
+      customer: portalCustomerId,
       return_url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/premium`,
     })
 
@@ -174,12 +187,13 @@ router.post('/cancel', authenticate, async (req: AuthRequest, res, next) => {
     }
 
     const user = await dbGet('SELECT * FROM users WHERE id = ?', [userId])
-    if (!user || !user.stripe_subscription_id) {
+    const subscriptionId = nonEmptyString(user?.stripe_subscription_id)
+    if (!user || !subscriptionId) {
       throw new CustomError('No active subscription found', 404)
     }
 
     // Cancel subscription at period end
-    await stripe.subscriptions.update(user.stripe_subscription_id, {
+    await stripe.subscriptions.update(subscriptionId, {
       cancel_at_period_end: true,
     })
 

@@ -1,10 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
-import { db } from '../database/init.js'
-import { promisify } from 'util'
+import { dbGet } from '../database/client.js'
 import { getUserId, getUserRoles, AuthRequest } from './auth.js'
 import { CustomError } from './errorHandler'
-
-const dbGet = promisify(db.get.bind(db)) as (sql: string, params?: any[]) => Promise<any>
 
 /**
  * Check if user is admin

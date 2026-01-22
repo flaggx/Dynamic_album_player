@@ -1,0 +1,4 @@
+# Extra safety for `vercel deploy` (CLI uploads respect .gitignore; this lists edge cases)
+.env
+.env.*
+!.env.example

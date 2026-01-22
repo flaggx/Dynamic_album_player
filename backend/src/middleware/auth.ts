@@ -1,114 +1,152 @@
-import { expressjwt, GetVerificationKey } from 'express-jwt'
-import { expressJwtSecret } from 'jwks-rsa'
 import { Request, Response, NextFunction } from 'express'
+import jwt from 'jsonwebtoken'
+import * as jose from 'jose'
+import { dbGet } from '../database/client.js'
 
-// Extend Express Request to include auth property
 export interface AuthRequest extends Request {
-  auth?: {
-    sub: string
-    email?: string
-    name?: string
-    picture?: string
-    // Auth0 roles are in the token's permissions or roles claim
-    // Check both common locations
-    'https://lostcampstudios.com/roles'?: string[]
-    roles?: string[]
-    permissions?: string[]
+  auth?: SupabaseJwtPayload
+}
+
+export interface SupabaseJwtPayload {
+  sub: string
+  email?: string
+  role?: string
+  aud?: string | string[]
+  iss?: string
+  app_metadata?: Record<string, unknown>
+  user_metadata?: Record<string, unknown>
+}
+
+const SUPABASE_JWT_SECRET = process.env.SUPABASE_JWT_SECRET || ''
+const SUPABASE_URL = (process.env.SUPABASE_URL || '').replace(/\/$/, '')
+
+const expectedIssuer = SUPABASE_URL ? `${SUPABASE_URL}/auth/v1` : ''
+
+if (!SUPABASE_JWT_SECRET && SUPABASE_URL) {
+  console.log('ℹ️  JWT verification: using Supabase JWKS (asymmetric signing). SUPABASE_JWT_SECRET not set.')
+} else if (!SUPABASE_JWT_SECRET && !SUPABASE_URL) {
+  console.warn('⚠️  Set SUPABASE_URL (JWKS) or SUPABASE_JWT_SECRET (HS256). Authentication will fail.')
+}
+
+async function verifyBearerToken(token: string): Promise<SupabaseJwtPayload> {
+  if (SUPABASE_JWT_SECRET) {
+    const decoded = jwt.verify(token, SUPABASE_JWT_SECRET, {
+      algorithms: ['HS256'],
+      audience: 'authenticated',
+      ...(expectedIssuer ? { issuer: expectedIssuer } : {}),
+    }) as SupabaseJwtPayload
+    return decoded
   }
+
+  if (!SUPABASE_URL) {
+    throw new Error('SUPABASE_URL is required when SUPABASE_JWT_SECRET is not set')
+  }
+
+  const jwks = jose.createRemoteJWKSet(new URL(`${SUPABASE_URL}/auth/v1/.well-known/jwks.json`))
+  const { payload } = await jose.jwtVerify(token, jwks, {
+    issuer: expectedIssuer,
+    audience: 'authenticated',
+  })
+  return payload as SupabaseJwtPayload
 }
 
-// Auth0 configuration
-const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN || ''
-const AUTH0_AUDIENCE = process.env.AUTH0_AUDIENCE || ''
-
-if (!AUTH0_DOMAIN) {
-  console.warn('⚠️  AUTH0_DOMAIN not set. Authentication will be disabled.')
+export const authenticate = (req: AuthRequest, res: Response, next: NextFunction) => {
+  void (async () => {
+    const header = req.headers.authorization
+    if (!header?.startsWith('Bearer ')) {
+      res.status(401).json({ error: 'Authentication required' })
+      return
+    }
+    const token = header.slice(7).trim()
+    try {
+      req.auth = await verifyBearerToken(token)
+      next()
+    } catch {
+      res.status(401).json({ error: 'Invalid or expired token' })
+    }
+  })()
 }
 
-console.log('Auth0 config - Domain:', AUTH0_DOMAIN ? 'set' : 'NOT SET', 'Audience:', AUTH0_AUDIENCE ? 'set' : 'NOT SET')
+export const optionalAuth = (req: AuthRequest, res: Response, next: NextFunction) => {
+  void (async () => {
+    const header = req.headers.authorization
+    if (!header?.startsWith('Bearer ')) {
+      next()
+      return
+    }
+    const token = header.slice(7).trim()
+    try {
+      req.auth = await verifyBearerToken(token)
+    } catch {
+      req.auth = undefined
+    }
+    next()
+  })()
+}
 
-// JWT verification middleware
-export const authenticate = expressjwt({
-  secret: expressJwtSecret({
-    cache: true,
-    rateLimit: true,
-    jwksRequestsPerMinute: 5,
-    jwksUri: `https://${AUTH0_DOMAIN}/.well-known/jwks.json`,
-  }) as GetVerificationKey,
-  audience: AUTH0_AUDIENCE || undefined,
-  issuer: `https://${AUTH0_DOMAIN}/`,
-  algorithms: ['RS256'],
-  requestProperty: 'auth',
-})
-
-// Optional authentication - doesn't fail if no token
-export const optionalAuth = expressjwt({
-  secret: expressJwtSecret({
-    cache: true,
-    rateLimit: true,
-    jwksRequestsPerMinute: 5,
-    jwksUri: `https://${AUTH0_DOMAIN}/.well-known/jwks.json`,
-  }) as GetVerificationKey,
-  audience: AUTH0_AUDIENCE || undefined,
-  issuer: `https://${AUTH0_DOMAIN}/`,
-  algorithms: ['RS256'],
-  requestProperty: 'auth',
-  credentialsRequired: false,
-})
-
-// Helper to get user ID from request
 export const getUserId = (req: AuthRequest): string | null => {
   return req.auth?.sub || null
 }
 
-// Helper to check if user is authenticated
 export const isAuthenticated = (req: AuthRequest): boolean => {
   return !!req.auth?.sub
 }
 
-// Helper to get user roles from Auth0 token
 export const getUserRoles = (req: AuthRequest): string[] => {
-  const auth = req.auth
-  if (!auth) return []
-  
-  // Auth0 roles can be in different places depending on configuration
-  // Check common locations
-  return (
-    auth['https://lostcampstudios.com/roles'] ||
-    auth.roles ||
-    auth.permissions ||
-    []
-  )
+  const meta = req.auth?.app_metadata
+  if (!meta) return []
+
+  const direct = meta.roles
+  if (Array.isArray(direct)) {
+    return direct.filter((r): r is string => typeof r === 'string')
+  }
+  const role = meta.role
+  if (typeof role === 'string' && role.length > 0) {
+    return [role]
+  }
+  return []
 }
 
-// Middleware to check if user has admin role
-export const requireAdmin = (
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction
-) => {
-  if (!isAuthenticated(req)) {
-    return res.status(401).json({ error: 'Authentication required' })
-  }
+export const requireAdmin = (req: AuthRequest, res: Response, next: NextFunction) => {
+  void (async () => {
+    try {
+      if (!isAuthenticated(req)) {
+        res.status(401).json({ error: 'Authentication required' })
+        return
+      }
 
-  const roles = getUserRoles(req)
-  const isAdmin = roles.includes('admin') || roles.includes('Admin')
+      const userId = getUserId(req)
+      if (!userId) {
+        res.status(401).json({ error: 'Authentication required' })
+        return
+      }
 
-  if (!isAdmin) {
-    return res.status(403).json({ error: 'Admin access required' })
-  }
+      const roles = getUserRoles(req)
+      const jwtAdmin = roles.some(
+        (r) => r.toLowerCase() === 'admin' || r.toLowerCase() === 'administrator'
+      )
+      if (jwtAdmin) {
+        next()
+        return
+      }
 
-  next()
+      const row = await dbGet('SELECT is_admin FROM users WHERE id = ?', [userId])
+      if (row?.is_admin === true) {
+        next()
+        return
+      }
+
+      res.status(403).json({ error: 'Admin access required' })
+    } catch (e) {
+      next(e)
+    }
+  })()
 }
 
-// Helper to check if user is banned (requires database query)
-// This should be used in routes that need to check ban status
-// Usage: const isBanned = await checkBanned(userId, dbGet)
 export const checkBanned = async (
-  userId: string, 
-  dbGet: (sql: string, params?: any[]) => Promise<any>
+  userId: string,
+  dbGet: (sql: string, params?: unknown[]) => Promise<Record<string, unknown> | undefined>
 ): Promise<boolean> => {
   const user = await dbGet('SELECT banned FROM users WHERE id = ?', [userId])
-  return user?.banned === 1
+  return user?.banned === true
 }
-

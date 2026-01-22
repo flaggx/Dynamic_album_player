@@ -1,14 +1,10 @@
 import express from 'express'
-import { db } from '../database/init.js'
+import { dbRun, dbGet, dbAll } from '../database/client.js'
 import { v4 as uuidv4 } from 'uuid'
-import { promisify } from 'util'
 import { authenticate, optionalAuth, getUserId, AuthRequest } from '../middleware/auth.js'
 import { CustomError } from '../middleware/errorHandler'
 
 const router = express.Router()
-const dbRun = promisify(db.run.bind(db)) as (sql: string, params?: any[]) => Promise<any>
-const dbGet = promisify(db.get.bind(db)) as (sql: string, params?: any[]) => Promise<any>
-const dbAll = promisify(db.all.bind(db)) as (sql: string, params?: any[]) => Promise<any[]>
 
 // Get user favorites
 router.get('/user/:userId', authenticate, async (req: AuthRequest, res, next) => {
@@ -99,7 +95,7 @@ router.post('/toggle', authenticate, async (req: AuthRequest, res, next) => {
         res.json({ isFavorited: true })
       } catch (error: any) {
         // If insert fails due to constraint, check if it was actually inserted
-        if (error.code === 'SQLITE_CONSTRAINT' || error.message?.includes('UNIQUE')) {
+        if ((error as { code?: string })?.code === '23505' || (error as Error)?.message?.includes('UNIQUE')) {
           // Already exists, return true
           res.json({ isFavorited: true })
         } else {

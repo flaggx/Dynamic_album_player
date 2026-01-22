@@ -2,17 +2,13 @@ import express from 'express'
 import multer from 'multer'
 import path from 'path'
 import fs from 'fs'
-import { db } from '../database/init.js'
+import { dbRun, dbGet, dbAll } from '../database/client.js'
 import { v4 as uuidv4 } from 'uuid'
-import { promisify } from 'util'
 import { authenticate, optionalAuth, getUserId, AuthRequest } from '../middleware/auth.js'
 import { requirePremium } from '../middleware/premium.js'
 import { CustomError } from '../middleware/errorHandler'
 
 const router = express.Router()
-const dbRun = promisify(db.run.bind(db)) as (sql: string, params?: any[]) => Promise<any>
-const dbGet = promisify(db.get.bind(db)) as (sql: string, params?: any[]) => Promise<any>
-const dbAll = promisify(db.all.bind(db)) as (sql: string, params?: any[]) => Promise<any[]>
 
 // Configure multer for cover image uploads
 const uploadDir = process.env.UPLOAD_DIR || path.join(process.cwd(), 'uploads')
