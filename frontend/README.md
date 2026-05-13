@@ -24,6 +24,13 @@ npm start
 
 This folder is a **Next.js App Router** app. Deploy **`frontend/`** as the Vercel root; production uses **Supabase** for data and **Next API routes** for Stripe. The `backend/` folder is optional for local experiments only.
 
+If Vercel reports **“No Next.js version detected”**, the project **Root Directory** is wrong. In the dashboard set it to **`frontend`**, or from the CLI (requires a [token](https://vercel.com/account/tokens)):
+
+```bash
+cd frontend
+VERCEL_TOKEN=… npm run vercel:set-root
+```
+
 ### Option A — Vercel CLI (from `frontend/`)
 
 1. `npm install`

@@ -3,13 +3,7 @@ import { useAuth } from '../contexts/AuthContext'
 import './Auth.css'
 
 const Login = () => {
-  const {
-    loginWithRedirect,
-    signInWithEmailPassword,
-    signUpWithEmailPassword,
-    isLoading,
-    isAuthenticated,
-  } = useAuth()
+  const { signInWithEmailPassword, signUpWithEmailPassword, isLoading, isAuthenticated } = useAuth()
   const [mode, setMode] = useState<'signin' | 'signup'>('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -30,12 +24,6 @@ const Login = () => {
   if (isAuthenticated) {
     window.location.replace('/')
     return null
-  }
-
-  const handleGoogle = () => {
-    loginWithRedirect().catch((err) => {
-      console.error('Login error:', err)
-    })
   }
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
@@ -134,15 +122,7 @@ const Login = () => {
           </button>
         </form>
 
-        <p className="auth-divider">
-          <span>or</span>
-        </p>
-
-        <button type="button" onClick={handleGoogle} className="auth-button" disabled={pending}>
-          Continue with Google
-        </button>
-
-        <p className="auth-footer">Authentication uses Supabase Auth (built-in users)</p>
+        <p className="auth-footer">Sign in with your email and password (Supabase Auth).</p>
       </div>
     </div>
   )

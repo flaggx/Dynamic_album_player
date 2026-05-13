@@ -11,7 +11,7 @@ import { isSupabaseConfigured, getSupabase } from '../lib/supabase'
 import { setAuthTokenGetter } from '../services/api'
 import { syncAuthUserToPublicProfile } from '../services/syncAuthProfile'
 
-/** Shape close to what Auth0 provided so call sites stay simple */
+/** App-facing user shape (maps from Supabase User). */
 export type AppUser = {
   sub: string
   email?: string
@@ -42,6 +42,7 @@ export type AuthContextValue = {
   user: AppUser | null
   isAuthenticated: boolean
   isLoading: boolean
+  /** Sends the user to the email login page (no OAuth). */
   loginWithRedirect: () => Promise<void>
   signInWithEmailPassword: (email: string, password: string) => Promise<EmailAuthResult>
   signUpWithEmailPassword: (email: string, password: string) => Promise<EmailAuthResult>
@@ -91,13 +92,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [session])
 
   const loginWithRedirect = useCallback(async () => {
-    const client = getSupabase()
-    if (!client) return
-    const redirectTo = `${window.location.origin}/callback`
-    await client.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo },
-    })
+    if (typeof window === 'undefined') return
+    window.location.assign('/login')
   }, [])
 
   const signInWithEmailPassword = useCallback(async (email: string, password: string) => {

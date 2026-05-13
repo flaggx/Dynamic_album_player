@@ -10,7 +10,8 @@
     "vercel": "vercel",
     "vercel:deploy": "vercel deploy",
     "vercel:prod": "vercel deploy --prod",
-    "vercel:push-env": "node scripts/push-env-to-vercel.mjs"
+    "vercel:push-env": "node scripts/push-env-to-vercel.mjs",
+    "vercel:set-root": "node scripts/set-vercel-root-directory.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
